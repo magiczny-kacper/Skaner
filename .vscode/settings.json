@@ -1,4 +1,23 @@
 {
     "python.pythonPath": ".venv\\Scripts\\python.exe",
-    "git.ignoreLimitWarning": true
+    //"python.linting.pep8Enabled": true,
+    "python.linting.pylintPath": ".venv/Lib/site-packages/pylint",
+    "python.linting.pylintArgs": [
+        "--load-plugins",
+        "pylint_django"
+    ],
+    "python.linting.pylintEnabled": true,
+    "git.ignoreLimitWarning": true,
+    "editor.formatOnSave": true,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        ".vscode": true,
+        "**/*.pyc": true,
+        "**/__pycache__/": true
+    },
+    "python.linting.enabled": true
 }
