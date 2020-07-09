@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import \
     QCheckBox, \
     QButtonGroup
 
-from csv import reader
+import const
 
 matplotlib.use('Qt5Agg')
 
@@ -74,10 +74,10 @@ class MainWindow(QWidget):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setWindowTitle("Skaner")
         self.__index = 0
-        self.__samples = 0
-        self.__samplingPeriod = 0
-        self.__initValue = 0.0
-        self.__step = 0.0
+        self.__samples = const.defSamples
+        self.__samplingPeriod = const.defSamplingPeriod
+        self.__initValue = const.definitValue
+        self.__step = const.defStep
         self.maxval = 0.0
         self.minval = 0.0
         # Etykiety, umieszczone obok pół wpisywania danych
@@ -94,7 +94,8 @@ class MainWindow(QWidget):
         Tlayout = QGridLayout()
 
         # Dodanie etykiet jako widgety do layoutu
-        Tlayout.addWidget(samplesNumberLabel, 0, 0)
+        Tlayout.addWidget(samplesNumberLabel,
+                          const.sampNumLabRow, const.sampNumLabCol)
         Tlayout.addWidget(samplingIntervalLabel, 1, 0)
         Tlayout.addWidget(initValueLabel, 2, 0)
         Tlayout.addWidget(deltaValueLabel, 3, 0)
@@ -191,7 +192,6 @@ class MainWindow(QWidget):
             self.stop_plot()
             QMessageBox.information(
                 self, "Info", "Zakończono.", QMessageBox.Ok)
-        print("UpdatePlotExit")
 
     def start_plot(self):
         try:
@@ -206,7 +206,6 @@ class MainWindow(QWidget):
         if dataok:
             if self.__samplingPeriod > 0:
                 if self.__samples > 0 and self.__step != 0.0:
-                    print("nocsv")
                     self.xdata = list(self.__initValue + i *
                                       self.__step for i in range(self.__samples))
                     dataok = True
@@ -237,10 +236,6 @@ class MainWindow(QWidget):
 
                 self.ydata = [0.0 for i in range(self.__samples)]
                 self.timer.setInterval(self.__samplingPeriod)
-                print(len(self.xdata))
-                print(self.xdata)
-                print(len(self.ydata))
-                print(self.ydata)
                 try:
                     self.update_plot()
                     self.timer.start()

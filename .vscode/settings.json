@@ -1,6 +1,6 @@
 {
     "python.pythonPath": ".venv\\Scripts\\python.exe",
-    //"python.linting.pep8Enabled": true,
+    //"python.linting.pycodestyleEnabled": true,
     //"python.linting.pylintPath": ".venv/Lib/site-packages/pylint",
     "python.linting.pylintArgs": [
         "--load-plugins",
