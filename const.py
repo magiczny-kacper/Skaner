@@ -50,8 +50,8 @@ startBtnCol = 2
 stopBtnRow = 1
 stopBtnCol = 2
 
-clearBtnRow = 2
-clearBrnCol = 2
+clrBtnRow = 2
+clrBrnCol = 2
 
 # Wybór skali wykresu
 pltXsclRow = 4

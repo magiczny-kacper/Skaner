@@ -80,6 +80,7 @@ class MainWindow(QWidget):
         self.__step = const.defStep
         self.maxval = 0.0
         self.minval = 0.0
+
         # Etykiety, umieszczone obok pół wpisywania danych
         samplesNumberLabel = QLabel("Ilość punktów na wykresie:", self)
         samplingIntervalLabel = QLabel("Okres próbkowania [ms]:", self)
@@ -96,47 +97,65 @@ class MainWindow(QWidget):
         # Dodanie etykiet jako widgety do layoutu
         Tlayout.addWidget(samplesNumberLabel,
                           const.sampNumLabRow, const.sampNumLabCol)
-        Tlayout.addWidget(samplingIntervalLabel, 1, 0)
-        Tlayout.addWidget(initValueLabel, 2, 0)
-        Tlayout.addWidget(deltaValueLabel, 3, 0)
-        Tlayout.addWidget(self.currentXlabel, 3, 2, 1, 3)
-        Tlayout.addWidget(self.currentYlabel, 4, 2, 1, 3)
+        Tlayout.addWidget(samplingIntervalLabel,
+                          const.sampIntLabRow, const.sampIntLabCol)
+        Tlayout.addWidget(initValueLabel, const.iniValLabRow,
+                          const.iniValLabCol)
+        Tlayout.addWidget(deltaValueLabel, const.delValLabRow,
+                          const.delValLabCol)
+        Tlayout.addWidget(self.currentXlabel, const.currXLabRow,
+                          const.currXLabCol, const.currXLabRowDim, const.currXLabColDim)
+        Tlayout.addWidget(self.currentYlabel, const.currYLabRow,
+                          const.currYLabCol, const.currYLabRowDim, const.currYLabColDim)
 
         # Pola do wpisania danych
         self.samplesNumberEdit = QLineEdit()
         self.samplingIntervalEdit = QLineEdit()
         self.initValueEdit = QLineEdit()
         self.deltaValueEdit = QLineEdit()
-        Tlayout.addWidget(self.samplesNumberEdit, 0, 1)
-        Tlayout.addWidget(self.samplingIntervalEdit, 1, 1)
-        Tlayout.addWidget(self.initValueEdit, 2, 1)
-        Tlayout.addWidget(self.deltaValueEdit, 3, 1)
+        Tlayout.addWidget(self.samplesNumberEdit,
+                          const.sampNumEditRow, const.sampNumEditCol)
+        Tlayout.addWidget(self.samplingIntervalEdit,
+                          const.sampIntEditRow, const.sampIntEditCol)
+        Tlayout.addWidget(self.initValueEdit,
+                          const.iniValEditRow, const.iniValEditCol)
+        Tlayout.addWidget(self.deltaValueEdit,
+                          const.delValEditRow, const.delValEditCol)
 
         self.samplesNumberEdit.setText("0")
         self.samplingIntervalEdit.setText("0")
         self.initValueEdit.setText("0")
         self.deltaValueEdit.setText("0")
+
         # Przyciski do startu i zatrzymania działania
         self.startBtn = QPushButton("Start", self)
         self.startBtn.clicked.connect(self.start_plot)
         self.stopBtn = QPushButton("Stop", self)
         self.stopBtn.clicked.connect(self.stop_plot)
         self.clearBtn = QPushButton("Wyczyść", self)
+
         self.clearBtn.clicked.connect(self.clear_plot)
-        Tlayout.addWidget(self.startBtn, 0, 2)
-        Tlayout.addWidget(self.stopBtn, 1, 2)
-        Tlayout.addWidget(self.clearBtn, 2, 2)
+
+        Tlayout.addWidget(self.startBtn, const.startBtnRow, const.startBtnCol)
+        Tlayout.addWidget(self.stopBtn, const.stopBtnRow, const.stopBtnCol)
+        Tlayout.addWidget(self.clearBtn, const.clrBtnRow, const.clrBtnCol)
+
         self.plotXscale = QComboBox(self)
         self.plotXscale.addItem('X: Liniowa')
         self.plotXscale.addItem('X: Logarytmiczna')
-        Tlayout.addWidget(self.plotXscale, 4, 0, 1, 1)
+        Tlayout.addWidget(self.plotXscale, const.pltXsclRow,
+                          const.pltXsclCol, const.pltXsclRowDim, const.pltXsclColDim)
+
         self.plotYscale = QComboBox(self)
         self.plotYscale.addItem('Y: Liniowa')
         self.plotYscale.addItem('Y: Logarytmiczna')
-        Tlayout.addWidget(self.plotYscale, 4, 1, 1, 1)
+        Tlayout.addWidget(self.plotYscale, const.pltYsclRow,
+                          const.pltYsclCol, const.pltYsclRowDim, const.pltYsclColDim)
+
         # Okno wykresu
-        self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
-        Tlayout.addWidget(self.canvas, 5, 0, 6, 6)
+        self.canvas = MplCanvas(self, width=const.canvWid,
+                                height=const.canvHght, dpi=const.canvDpi)
+        Tlayout.addWidget(self.canvas, const.canvRow, const.canvCol, const.canvRowDim, const.canvColDim)
         self.setLayout(Tlayout)
         self.show()
         self.xdata = []
