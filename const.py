@@ -67,9 +67,13 @@ pltYsclColDim = 1
 # Umieszczenie wykresu
 canvWid = 5
 canvHght = 4
-canvDpi = 200
+canvDpi = 100
 
-canvRow = 5
+canvRow = 6
 canvCol = 0
 canvRowDim = 6
 canvColDim = 6
+
+# Progress bar
+prgBarRow = 5
+prgBarCol = 0

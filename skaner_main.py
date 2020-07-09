@@ -7,7 +7,6 @@ from matplotlib.figure import Figure
 import PyQt5.QtCore
 from PyQt5.QtCore import Qt
 
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import \
     QLabel, \
     QGridLayout, \
@@ -20,7 +19,8 @@ from PyQt5.QtWidgets import \
     QComboBox, \
     QFileDialog, \
     QCheckBox, \
-    QButtonGroup
+    QButtonGroup, \
+    QProgressBar
 
 import const
 
@@ -152,10 +152,14 @@ class MainWindow(QWidget):
         Tlayout.addWidget(self.plotYscale, const.pltYsclRow,
                           const.pltYsclCol, const.pltYsclRowDim, const.pltYsclColDim)
 
+        self.progressBar = QProgressBar(self)
+        Tlayout.addWidget(self.progressBar, const.prgBarRow, const.prgBarCol)
+
         # Okno wykresu
         self.canvas = MplCanvas(self, width=const.canvWid,
                                 height=const.canvHght, dpi=const.canvDpi)
-        Tlayout.addWidget(self.canvas, const.canvRow, const.canvCol, const.canvRowDim, const.canvColDim)
+        Tlayout.addWidget(self.canvas, const.canvRow,
+                          const.canvCol, const.canvRowDim, const.canvColDim)
         self.setLayout(Tlayout)
         self.show()
         self.xdata = []
@@ -179,6 +183,7 @@ class MainWindow(QWidget):
         data = self.getData()
         currx = "X = 0"
         curry = "Y = 0"
+        self.progressBar.setValue(index)
         if index > 0:
             self.ydata[index - 1] = data
             if data > self.maxval:
@@ -239,6 +244,8 @@ class MainWindow(QWidget):
                 self.samplesNumberEdit.setReadOnly(True)
                 self.initValueEdit.setReadOnly(True)
                 self.deltaValueEdit.setReadOnly(True)
+                self.progressBar.setMaximum(self.__samples)
+                self.progressBar.setValue(0)
                 self.plotXscale.setEnabled(False)
                 self.plotYscale.setEnabled(False)
                 self.clearBtn.setEnabled(False)
