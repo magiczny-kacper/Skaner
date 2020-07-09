@@ -51,7 +51,7 @@ stopBtnRow = 1
 stopBtnCol = 2
 
 clrBtnRow = 2
-clrBrnCol = 2
+clrBtnCol = 2
 
 # Wybór skali wykresu
 pltXsclRow = 4
@@ -67,7 +67,7 @@ pltYsclColDim = 1
 # Umieszczenie wykresu
 canvWid = 5
 canvHght = 4
-canvDpi = 6
+canvDpi = 200
 
 canvRow = 5
 canvCol = 0
