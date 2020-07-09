@@ -50,17 +50,18 @@ class MplCanvas(FigureCanvas):
         self.axes = self.fig.clear()
         self.axes = self.fig.add_subplot(111)
 
-    def setXscale (self, scale):
+    def setXscale(self, scale):
         self.axes.set_xscale(scale)
 
-    def setYscale (self, scale):
+    def setYscale(self, scale):
         self.axes.set_yscale(scale)
 
-    def setYlim (self, min, max):
+    def setYlim(self, min, max):
         if min == max:
             self.axes.set_ylim(min)
         else:
             self.axes.set_ylim(min, max)
+
 
 '''
     Klasa głównego okna aplikacji.
@@ -110,13 +111,6 @@ class MainWindow(QWidget):
         Tlayout.addWidget(self.initValueEdit, 2, 1)
         Tlayout.addWidget(self.deltaValueEdit, 3, 1)
 
-        # Checkbox do wybrania danych z pliku
-        self.chkGrp = QButtonGroup()
-        self.sourceChkBox = QCheckBox("Pobierz dane z pliku")
-        self.chkGrp.addButton(self.sourceChkBox)
-        Tlayout.addWidget(self.sourceChkBox, 1, 3)
-
-
         self.samplesNumberEdit.setText("0")
         self.samplingIntervalEdit.setText("0")
         self.initValueEdit.setText("0")
@@ -128,12 +122,9 @@ class MainWindow(QWidget):
         self.stopBtn.clicked.connect(self.stop_plot)
         self.clearBtn = QPushButton("Wyczyść", self)
         self.clearBtn.clicked.connect(self.clear_plot)
-        self.openTabBtn = QPushButton("Otwórz tablice", self)
-        self.openTabBtn.clicked.connect(self.openFileDialog)
         Tlayout.addWidget(self.startBtn, 0, 2)
         Tlayout.addWidget(self.stopBtn, 1, 2)
         Tlayout.addWidget(self.clearBtn, 2, 2)
-        Tlayout.addWidget(self.openTabBtn, 0, 3)
         self.plotXscale = QComboBox(self)
         self.plotXscale.addItem('X: Liniowa')
         self.plotXscale.addItem('X: Logarytmiczna')
@@ -198,7 +189,8 @@ class MainWindow(QWidget):
         self.canvas.draw()
         if index == self.__samples:
             self.stop_plot()
-            QMessageBox.information(self, "Info", "Zakończono.", QMessageBox.Ok)
+            QMessageBox.information(
+                self, "Info", "Zakończono.", QMessageBox.Ok)
         print("UpdatePlotExit")
 
     def start_plot(self):
@@ -213,30 +205,18 @@ class MainWindow(QWidget):
             dataok = False
         if dataok:
             if self.__samplingPeriod > 0:
-                if self.__samples == -1:
-                    print("csv")
-                    with open(self.fileList) as csv_file:
-                        csv_reader = reader(csv_file, delimiter=',')
-                        dane = [row for idx, row in enumerate(csv_reader) if idx == 0]
-                        if len(dane[0]):
-                            self.xdata = list(float(x) for x in dane[0])
-                            self.__samples = len(self.xdata)
-                            self.samplesNumberEdit.setText(str(self.__samples))
-                            self.initValueEdit.setText(str(self.xdata[0]))
-                            dataok = True
-                        else:
-                            dataok = False
-
-                elif self.__samples > 0 and self.__step != 0.0:
+                if self.__samples > 0 and self.__step != 0.0:
                     print("nocsv")
-                    self.xdata = list(self.__initValue + i * self.__step for i in range(self.__samples))
+                    self.xdata = list(self.__initValue + i *
+                                      self.__step for i in range(self.__samples))
                     dataok = True
             else:
                 dataok = False
 
             if dataok:
                 if self.__samplingPeriod < 10:
-                    QMessageBox.warning(self, "Uwaga!", "Uwaga, okres próbkowania niżzy niż 10 ms, może powodować niepoprawną pracę programu.")
+                    QMessageBox.warning(
+                        self, "Uwaga!", "Uwaga, okres próbkowania niżzy niż 10 ms, może powodować niepoprawną pracę programu.")
                 self.samplingIntervalEdit.setReadOnly(True)
                 self.samplesNumberEdit.setReadOnly(True)
                 self.initValueEdit.setReadOnly(True)
@@ -268,7 +248,8 @@ class MainWindow(QWidget):
                     QMessageBox.warning(self, "Błąd", "Błąd.", QMessageBox.Ok)
                     self.stop_plot()
             else:
-                QMessageBox.warning(self, "Błąd", "Błędne dane.", QMessageBox.Ok)
+                QMessageBox.warning(
+                    self, "Błąd", "Błędne dane.", QMessageBox.Ok)
 
     def stop_plot(self):
         self.canvas.axes.autoscale(enable=True, axis='y')
@@ -288,14 +269,6 @@ class MainWindow(QWidget):
         self.maxval = 0.0
         self.canvas.clearPlot()
         self._plot_ref = None
-
-    def openFileDialog(self):
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self, "QFileDialog.getOpenFileName()", "",
-                                              "All Files (*);;Python Files (*.csv)", options=options)
-        if fileName:
-            self.fileList = fileName
 
     def getData(self):
         index = self.get_index()
