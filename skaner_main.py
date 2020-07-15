@@ -27,17 +27,8 @@ import const
 matplotlib.use('Qt5Agg')
 
 '''
-    Funkcja używana do pobrania danych dla wykresu. 
-    Tutaj powinna znaleźć się komunikacja z urządzeniami.
-    Funkcja wywoływana jest cyklicznie.
-    Powinna zwaracać dane do pokazania na wykresie.
-'''
-
-
-'''
     Klasa widżetu wykresu
 '''
-
 
 class MplCanvas(FigureCanvas):
 
@@ -62,11 +53,12 @@ class MplCanvas(FigureCanvas):
         else:
             self.axes.set_ylim(min, max)
 
+    def setPlotGrid(self, gridType, gridAxis):
+        self.axes.grid(gridType, which = 'both', axis = gridAxis)
 
 '''
     Klasa głównego okna aplikacji.
 '''
-
 
 class MainWindow(QWidget):
 
@@ -80,6 +72,7 @@ class MainWindow(QWidget):
         self.__step = const.defStep
         self.maxval = 0.0
         self.minval = 0.0
+        self.process = psutil.Process(os.getpid())
 
         # Etykiety, umieszczone obok pół wpisywania danych
         samplesNumberLabel = QLabel("Ilość punktów na wykresie:", self)
@@ -122,13 +115,13 @@ class MainWindow(QWidget):
         Tlayout.addWidget(self.deltaValueEdit,
                           const.delValEditRow, const.delValEditCol)
 
-        self.samplesNumberEdit.setText("0")
-        self.samplingIntervalEdit.setText("0")
-        self.initValueEdit.setText("0")
-        self.deltaValueEdit.setText("0")
+        self.samplesNumberEdit.setText(str(const.defSamples))
+        self.samplingIntervalEdit.setText(str(const.defSamplingPeriod))
+        self.initValueEdit.setText(str(const.definitValue))
+        self.deltaValueEdit.setText(str(const.defStep))
 
         # Przyciski do startu i zatrzymania działania
-        self.startBtn = QPushButton("Start", self)
+        self.startBtn = QPushButton("&Start", self)
         self.startBtn.clicked.connect(self.start_plot)
         self.stopBtn = QPushButton("Stop", self)
         self.stopBtn.clicked.connect(self.stop_plot)
@@ -151,6 +144,14 @@ class MainWindow(QWidget):
         self.plotYscale.addItem('Y: Logarytmiczna')
         Tlayout.addWidget(self.plotYscale, const.pltYsclRow,
                           const.pltYsclCol, const.pltYsclRowDim, const.pltYsclColDim)
+
+        self.plotGrid = QComboBox(self)
+        self.plotGrid.addItem('Brak siatki')
+        self.plotGrid.addItem('Tylko X')
+        self.plotGrid.addItem('Tylko Y')
+        self.plotGrid.addItem('X i Y')
+        self.plotGrid.currentIndexChanged.connect(self.changePlotGrid)
+        Tlayout.addWidget(self.plotGrid, const.pltGridRow, const.pltGridCol)
 
         self.progressBar = QProgressBar(self)
         Tlayout.addWidget(self.progressBar, const.prgBarRow, const.prgBarCol)
@@ -251,6 +252,7 @@ class MainWindow(QWidget):
                 self.clearBtn.setEnabled(False)
                 self.startBtn.setEnabled(False)
                 self.clear_plot()
+                self.changePlotGrid()
                 if self.plotXscale.currentIndex() == 0:
                     self.canvas.setXscale('linear')
                 elif self.plotXscale.currentIndex() == 1:
@@ -266,7 +268,7 @@ class MainWindow(QWidget):
                     self.update_plot()
                     self.timer.start()
                 except:
-                    QMessageBox.warning(self, "Błąd", "Błąd.", QMessageBox.Ok)
+                    QMessageBox.warning(self, "Błąd", "Wprowadź poprawny okres próbkowania", QMessageBox.Ok)
                     self.stop_plot()
             else:
                 QMessageBox.warning(
@@ -291,19 +293,37 @@ class MainWindow(QWidget):
         self.canvas.clearPlot()
         self._plot_ref = None
 
+    def changePlotGrid(self):
+        gridOn = False
+        gridAx = 'both'
+        if self.plotGrid.currentIndex() == 1:
+            gridOn = True
+            gridAx = 'x'
+        elif self.plotGrid.currentIndex() == 2:
+            gridOn = True
+            gridAx = 'y'
+        elif self.plotGrid.currentIndex() == 3:
+            gridOn = True
+            gridAx = 'both'
+            
+        self.canvas.setPlotGrid(gridOn, gridAx)
+
     def getData(self):
         index = self.get_index()
         if index == 0:
-            x = random.random()
             '''
+                Pierwszy obieg, nie ma jeszcze żadnych danych pomiarowych.
                 Wyśli dane do urządzenia i nie odbieraj nic.
             '''
+            pomiar = random.random()
+
         elif index > 0:
-            x = math.log(self.xdata[index - 1])
             '''
                 Pobierz dane z urządzenia z poprzedniego pomiaru i wyślij kolejną nastawę
             '''
-        return x
+            pomiar = self.ydata[index - 1] + random.random() - 0.5
+             
+        return pomiar
 
 
 if __name__ == '__main__':

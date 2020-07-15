@@ -1,8 +1,10 @@
 # Stałe wartości używane w programie, dla łatwiejszych późniejszych zmian
-defSamples = 0.0
-defSamplingPeriod = 0.0
-definitValue = 0.0
-defStep = 0.0
+
+# Domyślne wartości początkowe 
+defSamples = 10 # Ilość próbek
+defSamplingPeriod = 10 # Okres próbkowania
+definitValue = 10.0 # Wartośc początkowa
+defStep = 10.0 # Krok
 
 # Stałe GUI
 
@@ -33,12 +35,12 @@ delValEditRow = 3
 delValEditCol = 1
 
 # Aktualne wartości X i Y
-currXLabRow = 3
-currXLabCol = 2
+currXLabRow = 5
+currXLabCol = 1
 currXLabRowDim = 1
 currXLabColDim = 3
 
-currYLabRow = 4
+currYLabRow = 5
 currYLabCol = 2
 currYLabRowDim = 1
 currYLabColDim = 3
@@ -63,6 +65,9 @@ pltYsclRow = 4
 pltYsclCol = 1
 pltYsclRowDim = 1
 pltYsclColDim = 1
+
+pltGridRow = 4
+pltGridCol = 2
 
 # Umieszczenie wykresu
 canvWid = 5
