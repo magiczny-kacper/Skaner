@@ -1,44 +1,46 @@
 # Stałe wartości używane w programie, dla łatwiejszych późniejszych zmian
-defSamples = 0.0
-defSamplingPeriod = 0.0
-definitValue = 0.0
-defStep = 0.0
+
+# Domyślne wartości początkowe 
+defSamples = 10 # Ilość próbek
+defSamplingPeriod = 10 # Okres próbkowania
+definitValue = 10.0 # Wartośc początkowa
+defendValue = 100.0 # Krok
 
 # Stałe GUI
 
 # Etykiety parametrów
-sampNumLabRow = 0
+sampNumLabRow = 3
 sampNumLabCol = 0
 
-sampIntLabRow = 1
+sampIntLabRow = 0
 sampIntLabCol = 0
 
-iniValLabRow = 2
+iniValLabRow = 1
 iniValLabCol = 0
 
-delValLabRow = 3
-delValLabCol = 0
+endValLabRow = 2
+endValLabCol = 0
 
 # Pola do wpisania parametrów
-sampNumEditRow = 0
-sampNumEditCol = 1
+sampNumEditRow = sampNumLabRow
+sampNumEditCol = sampNumLabCol + 1
 
-sampIntEditRow = 1
-sampIntEditCol = 1
+sampIntEditRow = sampIntLabRow
+sampIntEditCol = sampIntLabCol + 1
 
-iniValEditRow = 2
-iniValEditCol = 1
+iniValEditRow = iniValLabRow
+iniValEditCol = iniValLabCol + 1
 
-delValEditRow = 3
-delValEditCol = 1
+endValEditRow = endValLabRow
+endValEditCol = endValLabCol + 1
 
 # Aktualne wartości X i Y
-currXLabRow = 3
-currXLabCol = 2
+currXLabRow = 5
+currXLabCol = 1
 currXLabRowDim = 1
 currXLabColDim = 3
 
-currYLabRow = 4
+currYLabRow = 5
 currYLabCol = 2
 currYLabRowDim = 1
 currYLabColDim = 3
@@ -63,6 +65,9 @@ pltYsclRow = 4
 pltYsclCol = 1
 pltYsclRowDim = 1
 pltYsclColDim = 1
+
+pltGridRow = 4
+pltGridCol = 2
 
 # Umieszczenie wykresu
 canvWid = 5
