@@ -4,35 +4,35 @@
 defSamples = 10 # Ilość próbek
 defSamplingPeriod = 10 # Okres próbkowania
 definitValue = 10.0 # Wartośc początkowa
-defStep = 10.0 # Krok
+defendValue = 100.0 # Krok
 
 # Stałe GUI
 
 # Etykiety parametrów
-sampNumLabRow = 0
+sampNumLabRow = 3
 sampNumLabCol = 0
 
-sampIntLabRow = 1
+sampIntLabRow = 0
 sampIntLabCol = 0
 
-iniValLabRow = 2
+iniValLabRow = 1
 iniValLabCol = 0
 
-delValLabRow = 3
-delValLabCol = 0
+endValLabRow = 2
+endValLabCol = 0
 
 # Pola do wpisania parametrów
-sampNumEditRow = 0
-sampNumEditCol = 1
+sampNumEditRow = sampNumLabRow
+sampNumEditCol = sampNumLabCol + 1
 
-sampIntEditRow = 1
-sampIntEditCol = 1
+sampIntEditRow = sampIntLabRow
+sampIntEditCol = sampIntLabCol + 1
 
-iniValEditRow = 2
-iniValEditCol = 1
+iniValEditRow = iniValLabRow
+iniValEditCol = iniValLabCol + 1
 
-delValEditRow = 3
-delValEditCol = 1
+endValEditRow = endValLabRow
+endValEditCol = endValLabCol + 1
 
 # Aktualne wartości X i Y
 currXLabRow = 5

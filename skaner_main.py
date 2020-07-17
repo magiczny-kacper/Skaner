@@ -30,6 +30,7 @@ matplotlib.use('Qt5Agg')
     Klasa widżetu wykresu
 '''
 
+
 class MplCanvas(FigureCanvas):
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
@@ -54,11 +55,17 @@ class MplCanvas(FigureCanvas):
             self.axes.set_ylim(min, max)
 
     def setPlotGrid(self, gridType, gridAxis):
-        self.axes.grid(gridType, which = 'both', axis = gridAxis)
+        self.axes.grid(False)
+        self.axes.grid(gridType, which='both', axis=gridAxis)
+
+    def setAutoscale(self, state, ax):
+        self.axes.autoscale(state, ax)
+
 
 '''
     Klasa głównego okna aplikacji.
 '''
+
 
 class MainWindow(QWidget):
 
@@ -69,16 +76,15 @@ class MainWindow(QWidget):
         self.__samples = const.defSamples
         self.__samplingPeriod = const.defSamplingPeriod
         self.__initValue = const.definitValue
-        self.__step = const.defStep
+        self.__endValue = const.defendValue
         self.maxval = 0.0
         self.minval = 0.0
-        self.process = psutil.Process(os.getpid())
 
         # Etykiety, umieszczone obok pół wpisywania danych
-        samplesNumberLabel = QLabel("Ilość punktów na wykresie:", self)
+        samplesNumberLabel = QLabel("Ilość punktów:", self)
         samplingIntervalLabel = QLabel("Okres próbkowania [ms]:", self)
         initValueLabel = QLabel("Wartość początkowa:", self)
-        deltaValueLabel = QLabel("Krok:", self)
+        endValueLabel = QLabel("Wartość końcowa:", self)
 
         # Etykiety wyświetlania współrzędnych ostatniego punktu
         self.currentXlabel = QLabel("x = 0", self)
@@ -94,8 +100,8 @@ class MainWindow(QWidget):
                           const.sampIntLabRow, const.sampIntLabCol)
         Tlayout.addWidget(initValueLabel, const.iniValLabRow,
                           const.iniValLabCol)
-        Tlayout.addWidget(deltaValueLabel, const.delValLabRow,
-                          const.delValLabCol)
+        Tlayout.addWidget(endValueLabel, const.endValLabRow,
+                          const.endValLabCol)
         Tlayout.addWidget(self.currentXlabel, const.currXLabRow,
                           const.currXLabCol, const.currXLabRowDim, const.currXLabColDim)
         Tlayout.addWidget(self.currentYlabel, const.currYLabRow,
@@ -105,20 +111,20 @@ class MainWindow(QWidget):
         self.samplesNumberEdit = QLineEdit()
         self.samplingIntervalEdit = QLineEdit()
         self.initValueEdit = QLineEdit()
-        self.deltaValueEdit = QLineEdit()
+        self.endValueEdit = QLineEdit()
         Tlayout.addWidget(self.samplesNumberEdit,
                           const.sampNumEditRow, const.sampNumEditCol)
         Tlayout.addWidget(self.samplingIntervalEdit,
                           const.sampIntEditRow, const.sampIntEditCol)
         Tlayout.addWidget(self.initValueEdit,
                           const.iniValEditRow, const.iniValEditCol)
-        Tlayout.addWidget(self.deltaValueEdit,
-                          const.delValEditRow, const.delValEditCol)
+        Tlayout.addWidget(self.endValueEdit,
+                          const.endValEditRow, const.endValEditCol)
 
         self.samplesNumberEdit.setText(str(const.defSamples))
         self.samplingIntervalEdit.setText(str(const.defSamplingPeriod))
         self.initValueEdit.setText(str(const.definitValue))
-        self.deltaValueEdit.setText(str(const.defStep))
+        self.endValueEdit.setText(str(const.defendValue))
 
         # Przyciski do startu i zatrzymania działania
         self.startBtn = QPushButton("&Start", self)
@@ -223,7 +229,10 @@ class MainWindow(QWidget):
             self.__samples = int(self.samplesNumberEdit.text())
             self.__samplingPeriod = int(self.samplingIntervalEdit.text())
             self.__initValue = float(self.initValueEdit.text())
-            self.__step = float(self.deltaValueEdit.text())
+            self.__endValue = float(self.endValueEdit.text())
+            self.__step = (self.__endValue - self.__initValue) / self.__samples
+            self.__samples = self.__samples + 1
+
             dataok = True
         except ValueError:
             QMessageBox.warning(self, "Błąd", "Błędne dane.", QMessageBox.Ok)
@@ -244,7 +253,7 @@ class MainWindow(QWidget):
                 self.samplingIntervalEdit.setReadOnly(True)
                 self.samplesNumberEdit.setReadOnly(True)
                 self.initValueEdit.setReadOnly(True)
-                self.deltaValueEdit.setReadOnly(True)
+                self.endValueEdit.setReadOnly(True)
                 self.progressBar.setMaximum(self.__samples)
                 self.progressBar.setValue(0)
                 self.plotXscale.setEnabled(False)
@@ -261,14 +270,23 @@ class MainWindow(QWidget):
                     self.canvas.setYscale('linear')
                 elif self.plotYscale.currentIndex() == 1:
                     self.canvas.setYscale('log')
-
+                self.canvas.setAutoscale(True, 'both')
+                # Tablica na wartości Y
                 self.ydata = [0.0 for i in range(self.__samples)]
                 self.timer.setInterval(self.__samplingPeriod)
+
                 try:
                     self.update_plot()
+                except:
+                    QMessageBox.warning(
+                        self, "Błąd", "Nieoczekiwany błąd.", QMessageBox.Ok)
+                    self.stop_plot()
+
+                try:
                     self.timer.start()
                 except:
-                    QMessageBox.warning(self, "Błąd", "Wprowadź poprawny okres próbkowania", QMessageBox.Ok)
+                    QMessageBox.warning(
+                        self, "Błąd", "Wprowadź poprawny okres próbkowania", QMessageBox.Ok)
                     self.stop_plot()
             else:
                 QMessageBox.warning(
@@ -284,7 +302,7 @@ class MainWindow(QWidget):
         self.samplingIntervalEdit.setReadOnly(False)
         self.samplesNumberEdit.setReadOnly(False)
         self.initValueEdit.setReadOnly(False)
-        self.deltaValueEdit.setReadOnly(False)
+        self.endValueEdit.setReadOnly(False)
 
     def clear_plot(self):
         self.__index = 0
@@ -305,8 +323,10 @@ class MainWindow(QWidget):
         elif self.plotGrid.currentIndex() == 3:
             gridOn = True
             gridAx = 'both'
-            
+
         self.canvas.setPlotGrid(gridOn, gridAx)
+        self.canvas.draw()
+        self.canvas.setAutoscale(True, 'both')
 
     def getData(self):
         index = self.get_index()
@@ -315,14 +335,14 @@ class MainWindow(QWidget):
                 Pierwszy obieg, nie ma jeszcze żadnych danych pomiarowych.
                 Wyśli dane do urządzenia i nie odbieraj nic.
             '''
-            pomiar = random.random()
+            pomiar = random.random() * 100.0
 
         elif index > 0:
             '''
                 Pobierz dane z urządzenia z poprzedniego pomiaru i wyślij kolejną nastawę
             '''
-            pomiar = self.ydata[index - 1] + random.random() - 0.5
-             
+            pomiar = self.ydata[index - 1] + (random.random() - 0.5) * 10.0
+
         return pomiar
 
 
