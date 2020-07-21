@@ -1,0 +1,18 @@
+{
+    "plot": [
+        {
+            "grids": 0,
+            "xScale": 0,
+            "yScale": 0
+        }
+    ],
+    "sampling": [
+        {
+            "firstValue": "10.0",
+            "lastValue": "100.0",
+            "sampleCount": "1000",
+            "samplingPeriod": "10",
+            "xGen": 0
+        }
+    ]
+}
