@@ -39,6 +39,8 @@ class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
+        self.annMax = None
+        self.annMin = None
         super(MplCanvas, self).__init__(self.fig)
 
     def clearPlot(self):
@@ -63,6 +65,22 @@ class MplCanvas(FigureCanvas):
 
     def setAutoscale(self, state, ax):
         self.axes.autoscale(state, ax)
+
+    def pointMax(self, x, y):
+        if self.annMax != None:
+            self.annMax.remove()
+        textData = "Max " + "{:.5f}".format(x) + " ; " + "{:.5f}".format(y)
+        self.annMax = self.axes.annotate(
+            text=textData, xy=(x, y), color="purple", xytext=(x - 5, y + 0.5),
+            arrowprops=dict(arrowstyle='->', facecolor='black'))
+
+    def pointMin(self, x, y):
+        if self.annMin != None:
+            self.annMin.remove()
+        textData = "Min " + "{:.5f}".format(x) + " ; " + "{:.5f}".format(y)
+        self.annMin = self.axes.annotate(
+            text=textData, xy=(x, y), color="purple", xytext=(x - 5, y - 0.5),
+            arrowprops=dict(arrowstyle='->', facecolor='black'))
 
 
 '''
@@ -279,14 +297,16 @@ class MainWindow(QWidget):
                 "{:.5f}".format(self.maxval_x) + " Y=" + \
                 "{:.5f}".format(self.maxval)
             self.maxLabel.setText(maxx)
+            self.canvas.pointMax(self.maxval_x, self.maxval)
 
         if minupdt == True:
             minx = "MIN: X=" + \
                 "{:.5f}".format(self.minval_x) + " Y=" + \
                 "{:.5f}".format(self.minval)
             self.minLabel.setText(minx)
+            self.canvas.pointMin(self.minval_x, self.minval)
 
-        self.canvas.setYlim(self.minval, self.maxval)
+        self.canvas.setYlim(self.minval * 1.1, self.maxval * 1.1)
         # Note: we no longer need to clear the axis.
         if self._plot_ref is None:
             # First time we have no plot reference, so do a normal plot.
