@@ -82,7 +82,9 @@ class MainWindow(QWidget):
         self.__initValue = const.definitValue
         self.__endValue = const.defendValue
         self.maxval = 0.0
+        self.maxval_x = 0.0
         self.minval = 0.0
+        self.minval_x = 0.0
 
 # Definicje etkiet w programie
         # Etykiety, umieszczone obok pół wpisywania danych
@@ -95,6 +97,8 @@ class MainWindow(QWidget):
         # Etykiety wyświetlania współrzędnych ostatniego punktu
         self.currentXlabel = QLabel("x = 0", self)
         self.currentYlabel = QLabel('y = 0', self)
+        self.maxLabel = QLabel("MAX: x = 0; y = 0", self)
+        self.minLabel = QLabel("MIN: x = 0; y = 0", self)
 
 # Definicje pól wprowadzania tekstu w programie
         self.samplesNumberEdit = QLineEdit()
@@ -169,10 +173,12 @@ class MainWindow(QWidget):
 
         self.currentDataGroup = QGroupBox("Wartości")
         grdLay = QGridLayout()
-        grdLay.addWidget(self.currentXlabel, const.currXLabRow,
-                         const.currXLabCol, const.currXLabRowDim, const.currXLabColDim)
-        grdLay.addWidget(self.currentYlabel, const.currYLabRow,
-                         const.currYLabCol, const.currYLabRowDim, const.currYLabColDim)
+        grdLay.addWidget(self.maxLabel, const.maxLabelRow, const.maxLabelCol)
+        grdLay.addWidget(self.minLabel, const.minLabelRow, const.minLabelCol)
+        grdLay.addWidget(self.currentXlabel,
+                         const.currXLabRow, const.currXLabCol)
+        grdLay.addWidget(self.currentYlabel,
+                         const.currYLabRow, const.currYLabCol)
         grdLay.addWidget(self.progressBar, const.prgBarRow, const.prgBarCol)
         self.currentDataGroup.setLayout(grdLay)
 
@@ -244,17 +250,42 @@ class MainWindow(QWidget):
             self.ydata[index - 1] = data
             if data > self.maxval:
                 self.maxval = data
+                self.maxval_x = self.xdata[index - 1]
+                maxxupdt = True
+                minupdt = False
             elif data < self.minval:
                 self.minval = data
+                self.minval_x = self.xdata[index - 1]
+                maxxupdt = False
+                minupdt = True
+            else:
+                maxxupdt = False
+                minupdt = False
+            curridx = "idx = " + str(self.get_index())
             currx = "X = " + "{:.5f}".format(self.xdata[self.get_index() - 1])
             curry = "Y = " + "{:.5f}".format(self.ydata[self.get_index() - 1])
-            curridx = "idx = " + str(self.get_index())
         else:
             self.maxval = data
             self.minval = data
+            maxxupdt = True
+            minupdt = True
+
         self.increment_index()
         self.currentYlabel.setText(curry)
         self.currentXlabel.setText(currx)
+
+        if maxxupdt == True:
+            maxx = "MAX: X=" + \
+                "{:.5f}".format(self.maxval_x) + " Y=" + \
+                "{:.5f}".format(self.maxval)
+            self.maxLabel.setText(maxx)
+
+        if minupdt == True:
+            minx = "MIN: X=" + \
+                "{:.5f}".format(self.minval_x) + " Y=" + \
+                "{:.5f}".format(self.minval)
+            self.minLabel.setText(minx)
+
         self.canvas.setYlim(self.minval, self.maxval)
         # Note: we no longer need to clear the axis.
         if self._plot_ref is None:
@@ -338,9 +369,10 @@ class MainWindow(QWidget):
 
                 try:
                     self.update_plot()
-                except:
+                except Exception as e:
                     QMessageBox.warning(
                         self, "Błąd", "Nieoczekiwany błąd.", QMessageBox.Ok)
+                    print(e)
                     self.stop_plot()
 
                 try:
