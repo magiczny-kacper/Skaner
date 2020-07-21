@@ -1,10 +1,10 @@
 # Stałe wartości używane w programie, dla łatwiejszych późniejszych zmian
 
-# Domyślne wartości początkowe 
-defSamples = 10 # Ilość próbek
-defSamplingPeriod = 10 # Okres próbkowania
-definitValue = 10.0 # Wartośc początkowa
-defendValue = 100.0 # Krok
+# Domyślne wartości początkowe
+defSamples = 10  # Ilość próbek
+defSamplingPeriod = 10  # Okres próbkowania
+definitValue = 10.0  # Wartośc początkowa
+defendValue = 100.0  # Krok
 
 # Stałe GUI
 
@@ -46,13 +46,13 @@ currYLabRowDim = 1
 currYLabColDim = 3
 
 # Przyciski
-startBtnRow = 0
+startBtnRow = 1
 startBtnCol = 2
 
-stopBtnRow = 1
+stopBtnRow = 2
 stopBtnCol = 2
 
-clrBtnRow = 2
+clrBtnRow = 3
 clrBtnCol = 2
 
 # Wybór skali wykresu
@@ -82,3 +82,13 @@ canvColDim = 6
 # Progress bar
 prgBarRow = 5
 prgBarCol = 0
+
+# Opracje na plikach - etykieta i przyciski
+confBtnsLabelRow = 0
+confBtnsLabelCol = 3
+
+saveConfBtnRow = 1
+saveConfBtnCol = 3
+
+openConfBtnRow = 2
+openConfBtnCol = 3

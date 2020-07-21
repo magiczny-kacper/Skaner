@@ -22,6 +22,8 @@ from PyQt5.QtWidgets import \
     QButtonGroup, \
     QProgressBar
 
+import json
+
 import const
 
 matplotlib.use('Qt5Agg')
@@ -85,6 +87,7 @@ class MainWindow(QWidget):
         samplingIntervalLabel = QLabel("Okres próbkowania [ms]:", self)
         initValueLabel = QLabel("Wartość początkowa:", self)
         endValueLabel = QLabel("Wartość końcowa:", self)
+        confBtnsLabel = QLabel("Plik ustawień:", self)
 
         # Etykiety wyświetlania współrzędnych ostatniego punktu
         self.currentXlabel = QLabel("x = 0", self)
@@ -106,6 +109,8 @@ class MainWindow(QWidget):
                           const.currXLabCol, const.currXLabRowDim, const.currXLabColDim)
         Tlayout.addWidget(self.currentYlabel, const.currYLabRow,
                           const.currYLabCol, const.currYLabRowDim, const.currYLabColDim)
+        Tlayout.addWidget(confBtnsLabel, const.confBtnsLabelRow,
+                          const.confBtnsLabelCol)
 
         # Pola do wpisania danych
         self.samplesNumberEdit = QLineEdit()
@@ -133,11 +138,23 @@ class MainWindow(QWidget):
         self.stopBtn.clicked.connect(self.stop_plot)
         self.clearBtn = QPushButton("Wyczyść", self)
 
-        self.clearBtn.clicked.connect(self.clear_plot)
-
         Tlayout.addWidget(self.startBtn, const.startBtnRow, const.startBtnCol)
         Tlayout.addWidget(self.stopBtn, const.stopBtnRow, const.stopBtnCol)
         Tlayout.addWidget(self.clearBtn, const.clrBtnRow, const.clrBtnCol)
+
+        self.clearBtn.clicked.connect(self.clear_plot)
+
+        # Przyciski do operacji na plikach
+        self.saveConfBtn = QPushButton("Zapisz", self)
+        self.openConfBtn = QPushButton("Wczytaj", self)
+
+        self.saveConfBtn.clicked.connect(self.saveConfigFile)
+        self.openConfBtn.clicked.connect(self.openConfigFile)
+
+        Tlayout.addWidget(self.saveConfBtn,
+                          const.saveConfBtnRow, const.saveConfBtnCol)
+        Tlayout.addWidget(self.openConfBtn,
+                          const.openConfBtnRow, const.openConfBtnCol)
 
         self.plotXscale = QComboBox(self)
         self.plotXscale.addItem('X: Liniowa')
@@ -327,6 +344,73 @@ class MainWindow(QWidget):
         self.canvas.setPlotGrid(gridOn, gridAx)
         self.canvas.draw()
         self.canvas.setAutoscale(True, 'both')
+
+    def saveConfigFile(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        dialogBox = QFileDialog()
+        dialogBox.setWindowTitle("Zapisz plik konfiguracyjny")
+        dialogBox.setNameFilters(
+            ["Plik JSON (*.json)", "Plik tekstowy (*.txt)"])
+        dialogBox.setDefaultSuffix('json')
+        dialogBox.setAcceptMode(QFileDialog.AcceptSave)
+
+        if dialogBox.exec_() == QFileDialog.Accepted:
+            filename = dialogBox.selectedFiles()[0]
+            config = {}
+            config['sampling'] = []
+            config['sampling'].append({
+                'samplingPeriod': self.samplingIntervalEdit.text(),
+                'firstValue': self.initValueEdit.text(),
+                'lastValue': self.endValueEdit.text(),
+                'sampleCount': self.samplesNumberEdit.text()
+            })
+            config['plot'] = []
+            config['plot'].append({
+                'grids': self.plotGrid.currentIndex(),
+                'xScale': self.plotXscale.currentIndex(),
+                'yScale': self.plotYscale.currentIndex()
+            })
+
+            with open(filename, 'w') as outfile:
+                json.dump(config, outfile, indent=4, sort_keys=True)
+
+    def openConfigFile(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        dialogBox = QFileDialog()
+        dialogBox.setWindowTitle("Wybierz plik konfiguracyjny")
+        dialogBox.setNameFilters(
+            ["Plik JSON (*.json)", "Plik tekstowy (*.txt)"])
+        dialogBox.setDefaultSuffix('json')
+        dialogBox.setAcceptMode(QFileDialog.AcceptOpen)
+
+        if dialogBox.exec_() == QFileDialog.Accepted:
+            filename = dialogBox.selectedFiles()[0]
+            with open(filename) as jsonFile:
+                data = json.load(jsonFile)
+                try:
+                    samplConf = data['sampling'][0]
+                    self.samplingIntervalEdit.setText(
+                        samplConf["samplingPeriod"])
+                    self.initValueEdit.setText(samplConf["firstValue"])
+                    self.endValueEdit.setText(samplConf["lastValue"])
+                    self.samplesNumberEdit.setText(samplConf["sampleCount"])
+                except:
+                    QMessageBox.warning(
+                        self, "Błąd", "Błędne ustawienia próbkowania.", QMessageBox.Ok)
+
+                try:
+                    samplConf = data['plot'][0]
+                    self.plotGrid.setCurrentIndex(samplConf['grids'])
+                    self.plotXscale.setCurrentIndex(samplConf['xScale'])
+                    self.plotYscale.setCurrentIndex(samplConf['yScale'])
+                except Exception as e:
+                    print(e)
+                    QMessageBox.warning(
+                        self, "Błąd", "Błędne ustawienia wykresu.", QMessageBox.Ok)
 
     def getData(self):
         index = self.get_index()
