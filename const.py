@@ -41,17 +41,19 @@ sampXScaleRow = xGenScaleLabelRow
 sampXScaleCol = xGenScaleLabelCol + 1
 
 # Aktualne wartości X i Y
-currXLabRow = 0
-currXLabCol = 0
-currXLabRowDim = 1
-currXLabColDim = 1
+maxLabelRow = 0
+maxLabelCol = 0
 
-currYLabRow = 1
+minLabelRow = 1
+minLabelCol = 0
+
+currXLabRow = 2
+currXLabCol = 0
+
+currYLabRow = 3
 currYLabCol = 0
-currYLabRowDim = 1
-currYLabColDim = 1
 # Progress bar
-prgBarRow = 2
+prgBarRow = 4
 prgBarCol = 0
 
 
