@@ -1,7 +1,7 @@
 # Stałe wartości używane w programie, dla łatwiejszych późniejszych zmian
 
 # Domyślne wartości początkowe
-defSamples = 10  # Ilość próbek
+defSamples = 1000  # Ilość próbek
 defSamplingPeriod = 10  # Okres próbkowania
 definitValue = 10.0  # Wartośc początkowa
 defendValue = 100.0  # Krok
@@ -21,6 +21,9 @@ iniValLabCol = 0
 endValLabRow = 2
 endValLabCol = 0
 
+xGenScaleLabelRow = 4
+xGenScaleLabelCol = 0
+
 # Pola do wpisania parametrów
 sampNumEditRow = sampNumLabRow
 sampNumEditCol = sampNumLabCol + 1
@@ -34,40 +37,40 @@ iniValEditCol = iniValLabCol + 1
 endValEditRow = endValLabRow
 endValEditCol = endValLabCol + 1
 
-# Aktualne wartości X i Y
-currXLabRow = 5
-currXLabCol = 1
-currXLabRowDim = 1
-currXLabColDim = 3
+sampXScaleRow = xGenScaleLabelRow
+sampXScaleCol = xGenScaleLabelCol + 1
 
-currYLabRow = 5
-currYLabCol = 2
+# Aktualne wartości X i Y
+currXLabRow = 0
+currXLabCol = 0
+currXLabRowDim = 1
+currXLabColDim = 1
+
+currYLabRow = 1
+currYLabCol = 0
 currYLabRowDim = 1
-currYLabColDim = 3
+currYLabColDim = 1
+# Progress bar
+prgBarRow = 2
+prgBarCol = 0
+
 
 # Przyciski
-startBtnRow = 1
-startBtnCol = 2
+startBtnRow = 0
+startBtnCol = 0
 
-stopBtnRow = 2
-stopBtnCol = 2
-
-clrBtnRow = 3
-clrBtnCol = 2
+stopBtnRow = 1
+stopBtnCol = 0
 
 # Wybór skali wykresu
-pltXsclRow = 4
+pltXsclRow = 1
 pltXsclCol = 0
-pltXsclRowDim = 1
-pltXsclColDim = 1
 
-pltYsclRow = 4
-pltYsclCol = 1
-pltYsclRowDim = 1
-pltYsclColDim = 1
+pltYsclRow = 2
+pltYsclCol = 0
 
 pltGridRow = 4
-pltGridCol = 2
+pltGridCol = 0
 
 # Umieszczenie wykresu
 canvWid = 5
@@ -79,16 +82,10 @@ canvCol = 0
 canvRowDim = 6
 canvColDim = 6
 
-# Progress bar
-prgBarRow = 5
-prgBarCol = 0
 
 # Opracje na plikach - etykieta i przyciski
-confBtnsLabelRow = 0
-confBtnsLabelCol = 3
+saveConfBtnRow = 3
+saveConfBtnCol = 0
 
-saveConfBtnRow = 1
-saveConfBtnCol = 3
-
-openConfBtnRow = 2
-openConfBtnCol = 3
+openConfBtnRow = 4
+openConfBtnCol = 0
