@@ -23,7 +23,9 @@ from PyQt5.QtWidgets import \
     QProgressBar, \
     QGroupBox
 
+
 import json
+import csv
 
 import const
 
@@ -32,6 +34,9 @@ matplotlib.use('Qt5Agg')
 '''
     Klasa widżetu wykresu
 '''
+lineCount = 5
+
+lineColors = ['red', 'green', 'blue', 'skyblue', 'olive']
 
 
 class MplCanvas(FigureCanvas):
@@ -39,10 +44,32 @@ class MplCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
+        self.annMax = None
+        self.annMin = None
+        self.maxY = 0
+        self.minY = 0
+        self.plotref = []
         super(MplCanvas, self).__init__(self.fig)
+
+    def plotData(self, xdata, ydata, lines):
+        if len(self.plotref) == 0:
+            # First time we have no plot reference, so do a normal plot.
+            # .plot returns a list of line <reference>s, as we're
+            # only getting one we can take the first element.
+            for i in range(lines):
+                plot_refs = self.axes.plot(xdata, ydata[0], lineColors[i])
+                self.plotref.append(plot_refs[0])
+        else:
+            # We have a reference, we can use it to update the data for that line.
+            for i in range(lines):
+                self.plotref[i].set_ydata(ydata[i])
+        # Trigger the canvas to update and redraw.
+        self.draw()
 
     def clearPlot(self):
         self.axes = self.fig.clear()
+        self.plotref = []
+        self.draw()
         self.axes = self.fig.add_subplot(111)
 
     def setXscale(self, scale):
@@ -55,7 +82,18 @@ class MplCanvas(FigureCanvas):
         if min == max:
             self.axes.set_ylim(min)
         else:
-            self.axes.set_ylim(min, max)
+            if min > 0:
+                minn = min * 0.9
+            else:
+                minn = min * 1.1
+
+            if max > 0:
+                maxx = max * 1.1
+            else:
+                maxx = max * 0.9
+            self.axes.set_ylim(minn, maxx)
+            self.maxY = maxx
+            self.minY = minn
 
     def setPlotGrid(self, gridType, gridAxis):
         self.axes.grid(False)
@@ -63,6 +101,22 @@ class MplCanvas(FigureCanvas):
 
     def setAutoscale(self, state, ax):
         self.axes.autoscale(state, ax)
+
+    def pointMax(self, x, y):
+        if self.annMax != None:
+            self.annMax.remove()
+        textData = "Max " + "{:.5f}".format(x) + " ; " + "{:.5f}".format(y)
+        self.annMax = self.axes.annotate(
+            text=textData, xy=(x, y), color="purple", xytext=(x - (x*0.1), self.maxY),
+            arrowprops=dict(arrowstyle='->', facecolor='black'))
+
+    def pointMin(self, x, y):
+        if self.annMin != None:
+            self.annMin.remove()
+        textData = "Min " + "{:.5f}".format(x) + " ; " + "{:.5f}".format(y)
+        self.annMin = self.axes.annotate(
+            text=textData, xy=(x, y), color="purple", xytext=(x - (x*0.1), self.minY),
+            arrowprops=dict(arrowstyle='->', facecolor='black'))
 
 
 '''
@@ -85,6 +139,7 @@ class MainWindow(QWidget):
         self.maxval_x = 0.0
         self.minval = 0.0
         self.minval_x = 0.0
+        self.XreadFromFile = False
 
 # Definicje etkiet w programie
         # Etykiety, umieszczone obok pół wpisywania danych
@@ -93,6 +148,7 @@ class MainWindow(QWidget):
         initValueLabel = QLabel("Wartość początkowa:", self)
         endValueLabel = QLabel("Wartość końcowa:", self)
         xGenScaleLabel = QLabel("Generowanie X:")
+        self.xGenLabel = QLabel("Brak X")
 
         # Etykiety wyświetlania współrzędnych ostatniego punktu
         self.currentXlabel = QLabel("x = 0", self)
@@ -123,6 +179,12 @@ class MainWindow(QWidget):
         self.openConfBtn = QPushButton("Wczytaj", self)
         self.saveConfBtn.clicked.connect(self.saveConfigFile)
         self.openConfBtn.clicked.connect(self.openConfigFile)
+        self.genXbtn = QPushButton("Generuj X")
+        self.genXbtn.clicked.connect(self.genXmethod)
+        self.saveXBtn = QPushButton("Zapisz X", self)
+        self.saveXBtn.clicked.connect(self.savexToFile)
+        self.readXBtn = QPushButton("Wczytaj X", self)
+        self.readXBtn.clicked.connect(self.readxFromFile)
 
 # Combo Boxy
         self.plotXscale = QComboBox(self)
@@ -169,6 +231,14 @@ class MainWindow(QWidget):
                          const.endValEditRow, const.endValEditCol)
         grdLay.addWidget(self.sampXGenCombo,
                          const.sampXScaleRow, const.sampXScaleCol)
+        grdLay.addWidget(self.saveXBtn,
+                         const.saveXBtnRow, const.saveXBtnCol)
+        grdLay.addWidget(self.readXBtn,
+                         const.readXBtnRow, const.readXBtnCol)
+        grdLay.addWidget(self.genXbtn,
+                         const.genXBtnRow, const.genXBtnCol)
+        grdLay.addWidget(self.xGenLabel, const.xGenLabelRow,
+                         const.xGenLabelCol)
         self.dataParametersGroup.setLayout(grdLay)
 
         self.currentDataGroup = QGroupBox("Wartości")
@@ -247,26 +317,36 @@ class MainWindow(QWidget):
         curry = "Y = 0"
         self.progressBar.setValue(index)
         if index > 0:
-            self.ydata[index - 1] = data
-            if data > self.maxval:
-                self.maxval = data
+            self.ydata[0][index - 1] = data[0]
+            self.ydata[1][index - 1] = data[1]
+            self.ydata[2][index - 1] = data[2]
+            self.ydata[3][index - 1] = data[3]
+            self.ydata[4][index - 1] = data[4]
+
+            extrData = self.findMinMax(data)
+
+            if extrData[0] > self.maxval:
+                self.maxval = extrData[0]
                 self.maxval_x = self.xdata[index - 1]
                 maxxupdt = True
-                minupdt = False
-            elif data < self.minval:
-                self.minval = data
-                self.minval_x = self.xdata[index - 1]
-                maxxupdt = False
-                minupdt = True
             else:
                 maxxupdt = False
+
+            if extrData[1] < self.minval:
+                self.minval = extrData[1]
+                self.minval_x = self.xdata[index - 1]
+                minupdt = True
+            else:
                 minupdt = False
+
             curridx = "idx = " + str(self.get_index())
-            currx = "X = " + "{:.5f}".format(self.xdata[self.get_index() - 1])
-            curry = "Y = " + "{:.5f}".format(self.ydata[self.get_index() - 1])
+            currx = "X = " + \
+                "{:.5f}".format(self.xdata[self.get_index() - 1])
+            curry = "Y = " + \
+                "{:.5f}".format(self.ydata[0][self.get_index() - 1])
         else:
-            self.maxval = data
-            self.minval = data
+            self.maxval = data[0]
+            self.minval = data[0]
             maxxupdt = True
             minupdt = True
 
@@ -279,32 +359,25 @@ class MainWindow(QWidget):
                 "{:.5f}".format(self.maxval_x) + " Y=" + \
                 "{:.5f}".format(self.maxval)
             self.maxLabel.setText(maxx)
+            self.canvas.pointMax(self.maxval_x, self.maxval)
 
         if minupdt == True:
             minx = "MIN: X=" + \
                 "{:.5f}".format(self.minval_x) + " Y=" + \
                 "{:.5f}".format(self.minval)
             self.minLabel.setText(minx)
+            self.canvas.pointMin(self.minval_x, self.minval)
 
         self.canvas.setYlim(self.minval, self.maxval)
-        # Note: we no longer need to clear the axis.
-        if self._plot_ref is None:
-            # First time we have no plot reference, so do a normal plot.
-            # .plot returns a list of line <reference>s, as we're
-            # only getting one we can take the first element.
-            plot_refs = self.canvas.axes.plot(self.xdata, self.ydata, 'r')
-            self._plot_ref = plot_refs[0]
-        else:
-            # We have a reference, we can use it to update the data for that line.
-            self._plot_ref.set_ydata(self.ydata)
-        # Trigger the canvas to update and redraw.
-        self.canvas.draw()
+        self.canvas.plotData(self.xdata, self.ydata, lineCount)
+
         if index == self.__samples:
             self.stop_plot()
             QMessageBox.information(
                 self, "Info", "Zakończono.", QMessageBox.Ok)
 
     def start_plot(self):
+        self.clear_plot()
         try:
             self.__samples = int(self.samplesNumberEdit.text())
             self.__samplingPeriod = int(self.samplingIntervalEdit.text())
@@ -320,18 +393,11 @@ class MainWindow(QWidget):
         if dataok:
             if self.__samplingPeriod > 0:
                 if self.__samples > 0 and self.__step != 0.0:
-                    if self.sampXGenCombo.currentIndex() == 0:
-                        self.xdata = list(self.__initValue + i *
-                                          self.__step for i in range(self.__samples))
-                    elif self.sampXGenCombo.currentIndex() == 1:
-                        x1 = math.log10(self.__initValue)
-                        x2 = math.log10(self.__endValue)
-                        i = []
-                        for j in range(self.__samples):
-                            i.append(x1 + j * ((x2 - x1)/(self.__samples - 1)))
-
-                        self.xdata = list(
-                            math.pow(10.0, j) for j in i)
+                    if self.XreadFromFile == False:
+                        self.genXmethod()
+                    else:
+                        self.__samples = len(self.xdata)
+                        self.samplesNumberEdit.setText(str(self.__samples))
 
                     dataok = True
             else:
@@ -364,7 +430,10 @@ class MainWindow(QWidget):
                     self.canvas.setYscale('log')
                 self.canvas.setAutoscale(True, 'both')
                 # Tablica na wartości Y
-                self.ydata = [0.0 for i in range(self.__samples)]
+                self.ydata = []
+                for j in range(10):
+                    self.ydata.append([0.0 for i in range(self.__samples)])
+
                 self.timer.setInterval(self.__samplingPeriod)
 
                 try:
@@ -491,23 +560,95 @@ class MainWindow(QWidget):
                     QMessageBox.warning(
                         self, "Błąd", "Błędne ustawienia wykresu.", QMessageBox.Ok)
 
+    def savexToFile(self):
+        if len(self.xdata) != 0:
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
+
+            dialogBox = QFileDialog()
+            dialogBox.setWindowTitle("Zapisz X do pliku")
+            dialogBox.setNameFilters(
+                ["Plik CSV (*.csv)"])
+            dialogBox.setDefaultSuffix('csv')
+            dialogBox.setAcceptMode(QFileDialog.AcceptSave)
+            if dialogBox.exec_() == QFileDialog.Accepted:
+                filename = dialogBox.selectedFiles()[0]
+                with open(filename, 'w', newline='') as xfile:
+                    wr = csv.writer(xfile)
+                    for i in self.xdata:
+                        wr.writerow([i])
+        else:
+            QMessageBox.warning(
+                self, "Błąd", "X nie został jeszcze wygenerowany.", QMessageBox.Ok)
+
+    def readxFromFile(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        dialogBox = QFileDialog()
+        dialogBox.setWindowTitle("Zapisz X do pliku")
+        dialogBox.setNameFilters(["Plik CSV (*.csv)"])
+        dialogBox.setDefaultSuffix('csv')
+        dialogBox.setAcceptMode(QFileDialog.AcceptOpen)
+        if dialogBox.exec_() == QFileDialog.Accepted:
+            filename = dialogBox.selectedFiles()[0]
+            with open(filename, newline='') as xfile:
+                reader = csv.reader(xfile)
+                self.xdata = [float(row[0]) for row in reader]
+
+                self.XreadFromFile = True
+                self.xGenLabel.setText("X wczytany")
+
+    def genXmethod(self):
+        self.XreadFromFile = False
+        try:
+            self.__samples = int(self.samplesNumberEdit.text())
+            self.__initValue = float(self.initValueEdit.text())
+            self.__endValue = float(self.endValueEdit.text())
+            self.__step = (self.__endValue - self.__initValue) / self.__samples
+            self.__samples = self.__samples + 1
+
+            if self.sampXGenCombo.currentIndex() == 0:
+                self.xdata = list(self.__initValue + i *
+                                  self.__step for i in range(self.__samples))
+            elif self.sampXGenCombo.currentIndex() == 1:
+                x1 = math.log10(self.__initValue)
+                x2 = math.log10(self.__endValue)
+                i = []
+                for j in range(self.__samples):
+                    i.append(x1 + j * ((x2 - x1)/(self.__samples - 1)))
+                self.xdata = list(math.pow(10.0, j) for j in i)
+            self.xGenLabel.setText("X wygenerowany")
+        except ValueError:
+            QMessageBox.warning(self, "Błąd", "Błędne dane.", QMessageBox.Ok)
+
     def getData(self):
         index = self.get_index()
+
         if index == 0:
             '''
                 Pierwszy obieg, nie ma jeszcze żadnych danych pomiarowych.
                 Wyśli dane do urządzenia i nie odbieraj nic.
             '''
-            pomiar = random.random()
+            pomiar = [0.0, 0.0, 0.0, 0.0, 0.0]
 
         elif index > 0:
+            pomiar = []
             '''
                 Pobierz dane z urządzenia z poprzedniego pomiaru i wyślij kolejną nastawę
             '''
-            pomiar = math.sin(self.xdata[index - 1]) * 10 + \
-                random.random() + math.cos(self.xdata[index - 1] * 3)
+            pomiar.append(math.cos(self.xdata[index - 1] * 10))
+            pomiar.append(math.cos(self.xdata[index - 1] * 0.5))
+            pomiar.append(math.cos(self.xdata[index - 1]))
+            pomiar.append(math.cos(self.xdata[index - 1] * 2))
+            pomiar.append(math.cos(self.xdata[index - 1] * 0.1))
 
         return pomiar
+
+    def findMinMax(self, data):
+        minimum = min(data)
+        maximum = max(data)
+        return [maximum, minimum]
 
 
 if __name__ == '__main__':
