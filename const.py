@@ -64,6 +64,18 @@ startBtnCol = 0
 stopBtnRow = 1
 stopBtnCol = 0
 
+xGenLabelRow = 0
+xGenLabelCol = 2
+
+saveXBtnRow = xGenLabelRow + 1
+saveXBtnCol = xGenLabelCol
+
+readXBtnRow = saveXBtnRow + 1
+readXBtnCol = saveXBtnCol
+
+genXBtnRow = readXBtnRow + 1
+genXBtnCol = readXBtnCol
+
 # Wybór skali wykresu
 pltXsclRow = 1
 pltXsclCol = 0
@@ -84,10 +96,15 @@ canvCol = 0
 canvRowDim = 6
 canvColDim = 6
 
-
 # Opracje na plikach - etykieta i przyciski
 saveConfBtnRow = 3
 saveConfBtnCol = 0
 
 openConfBtnRow = 4
 openConfBtnCol = 0
+
+maxPlotCount = 5
+lineColors = ['red', 'green', 'blue', 'skyblue', 'olive']
+
+if maxPlotCount > len(lineColors):
+    raise ValueError("Ther are more lines than line colors defined")
