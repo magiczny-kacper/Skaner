@@ -49,6 +49,7 @@ class MplCanvas(FigureCanvas):
         self.maxY = 0
         self.minY = 0
         self.plotref = []
+        self.axLegends = []
         super(MplCanvas, self).__init__(self.fig)
 
     def plotData(self, xdata, ydata, lines):
@@ -57,7 +58,14 @@ class MplCanvas(FigureCanvas):
             # .plot returns a list of line <reference>s, as we're
             # only getting one we can take the first element.
             for i in range(lines):
-                plot_refs = self.axes.plot(xdata, ydata[0], lineColors[i])
+                if len(self.axLegends) >= i + 1:
+                    axlabel = self.axLegends[i]
+                else:
+                    axlabel = None
+
+                plot_refs = self.axes.plot(
+                    xdata, ydata[0], lineColors[i], label=axlabel)
+
                 self.plotref.append(plot_refs[0])
         else:
             # We have a reference, we can use it to update the data for that line.
@@ -71,6 +79,16 @@ class MplCanvas(FigureCanvas):
         self.plotref = []
         self.draw()
         self.axes = self.fig.add_subplot(111)
+
+    def setAxisLabels(self, xlegend, ylegend):
+        self.axes.set_xlabel(xlegend)
+        self.axes.set_ylabel(ylegend)
+
+    def setAxesLegend(self, legends):
+        self.axLegends = []
+        self.axLegends = legends
+        legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
+            0.5, 1.05), ncol=3, fancybox=True, shadow=True)
 
     def setXscale(self, scale):
         self.axes.set_xscale(scale)
@@ -165,6 +183,8 @@ class MainWindow(QWidget):
         self.samplingIntervalEdit.setText(str(const.defSamplingPeriod))
         self.initValueEdit.setText(str(const.definitValue))
         self.endValueEdit.setText(str(const.defendValue))
+        self.xLegendEdit = QLineEdit()
+        self.yLegendEdit = QLineEdit()
 
 # Definicje przycisków w programie
         self.startBtn = QPushButton("&Start", self)
@@ -205,6 +225,14 @@ class MainWindow(QWidget):
         self.sampXGenCombo = QComboBox(self)
         self.sampXGenCombo.addItem('Liniowo')
         self.sampXGenCombo.addItem('Logarytmicznie')
+
+        self.plotCntCombo = QComboBox(self)
+        for i in range(5):
+            if i == 0:
+                suffix = " przebieg"
+            else:
+                suffix = " przebiegów"
+            self.plotCntCombo.addItem(str(i + 1) + suffix)
 
 # Progres bar
         self.progressBar = QProgressBar(self)
@@ -255,10 +283,15 @@ class MainWindow(QWidget):
         self.plotSettingsGroup = QGroupBox("Ustawienia wykresu")
         grdLay = QGridLayout()
         grdLay.addWidget(QLabel("Skala"), 0, 0)
+        grdLay.addWidget(QLabel("Legenda X"), 0, 1)
+        grdLay.addWidget(QLabel("Legenda Y"), 2, 1)
+        grdLay.addWidget(self.xLegendEdit, 1, 1)
+        grdLay.addWidget(self.yLegendEdit, 3, 1)
         grdLay.addWidget(self.plotXscale, const.pltXsclRow, const.pltXsclCol)
         grdLay.addWidget(self.plotYscale, const.pltYsclRow, const.pltYsclCol)
         grdLay.addWidget(QLabel("Siatka"), 3, 0)
         grdLay.addWidget(self.plotGrid, const.pltGridRow, const.pltGridCol)
+        grdLay.addWidget(self.plotCntCombo, 4, 1)
         self.plotSettingsGroup.setLayout(grdLay)
 
         self.ctrlButtonsGroup = QGroupBox("Kontrola")
@@ -349,6 +382,8 @@ class MainWindow(QWidget):
             self.minval = data[0]
             maxxupdt = True
             minupdt = True
+            self.canvas.setAxisLabels(
+                self.xLegendEdit.text(), self.yLegendEdit.text())
 
         self.increment_index()
         self.currentYlabel.setText(curry)
@@ -637,11 +672,16 @@ class MainWindow(QWidget):
             '''
                 Pobierz dane z urządzenia z poprzedniego pomiaru i wyślij kolejną nastawę
             '''
-            pomiar.append(math.cos(self.xdata[index - 1] * 10))
-            pomiar.append(math.cos(self.xdata[index - 1] * 0.5))
-            pomiar.append(math.cos(self.xdata[index - 1]))
-            pomiar.append(math.cos(self.xdata[index - 1] * 2))
-            pomiar.append(math.cos(self.xdata[index - 1] * 0.1))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * 10 * random.random()))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * 0.5 * random.random()))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * random.random()))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * 2 * random.random()))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * 0.1 * random.random()))
 
         return pomiar
 
