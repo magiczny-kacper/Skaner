@@ -1,5 +1,6 @@
 import importlib
 import importlib.util
+import json
 import os
 import signal
 import subprocess
@@ -13,7 +14,7 @@ import matplotlib as mpl
 
 
 # Minimal smoke-testing of the backends for which the dependencies are
-# PyPI-installable on Travis.  They are not available for all tested Python
+# PyPI-installable on CI.  They are not available for all tested Python
 # versions so we don't fail on missing backends.
 
 def _get_testable_interactive_backends():
@@ -23,19 +24,27 @@ def _get_testable_interactive_backends():
             (["cairo", "gi"], "gtk3cairo"),
             (["PyQt5"], "qt5agg"),
             (["PyQt5", "cairocffi"], "qt5cairo"),
+            (["PySide2"], "qt5agg"),
+            (["PySide2", "cairocffi"], "qt5cairo"),
             (["tkinter"], "tkagg"),
             (["wx"], "wx"),
             (["wx"], "wxagg"),
+            (["matplotlib.backends._macosx"], "macosx"),
     ]:
         reason = None
-        if not os.environ.get("DISPLAY"):
-            reason = "No $DISPLAY"
-        elif any(importlib.util.find_spec(dep) is None for dep in deps):
-            reason = "Missing dependency"
+        missing = [dep for dep in deps if not importlib.util.find_spec(dep)]
+        if sys.platform == "linux" and not os.environ.get("DISPLAY"):
+            reason = "$DISPLAY is unset"
+        elif missing:
+            reason = "{} cannot be imported".format(", ".join(missing))
+        elif backend == 'macosx' and os.environ.get('TF_BUILD'):
+            reason = "macosx backend fails on Azure"
         if reason:
             backend = pytest.param(
-                backend, marks=pytest.mark.skip(reason=reason))
-        elif backend == 'wxagg' and sys.platform == 'darwin':
+                backend,
+                marks=pytest.mark.skip(
+                    reason=f"Skipping {backend} because {reason}"))
+        elif backend.startswith('wx') and sys.platform == 'darwin':
             # ignore on OSX because that's currently broken (github #16849)
             backend = pytest.param(
                 backend,
@@ -53,6 +62,7 @@ _test_script = """\
 import importlib
 import importlib.util
 import io
+import json
 import sys
 from unittest import TestCase
 
@@ -63,6 +73,8 @@ rcParams.update({
     "webagg.open_in_browser": False,
     "webagg.port_retries": 1,
 })
+if len(sys.argv) >= 2:  # Second argument is json-encoded rcParams.
+    rcParams.update(json.loads(sys.argv[1]))
 backend = plt.rcParams["backend"].lower()
 assert_equal = TestCase().assertEqual
 assert_raises = TestCase().assertRaises
@@ -103,10 +115,11 @@ assert_equal(
 
 ax.plot([0, 1], [2, 3])
 
-timer = fig.canvas.new_timer(1)
+timer = fig.canvas.new_timer(1.)  # Test that floats are cast to int as needed.
 timer.add_callback(FigureCanvasBase.key_press_event, fig.canvas, "q")
 # Trigger quitting upon draw.
 fig.canvas.mpl_connect("draw_event", lambda event: timer.start())
+fig.canvas.mpl_connect("close_event", print)
 
 result = io.BytesIO()
 fig.savefig(result, format='png')
@@ -130,18 +143,24 @@ _test_timeout = 10  # Empirically, 1s is not enough on Travis.
 
 
 @pytest.mark.parametrize("backend", _get_testable_interactive_backends())
+@pytest.mark.parametrize("toolbar", ["toolbar2", "toolmanager"])
 @pytest.mark.flaky(reruns=3)
-def test_interactive_backend(backend):
+def test_interactive_backend(backend, toolbar):
+    if backend == "macosx" and toolbar == "toolmanager":
+        pytest.skip("toolmanager is not implemented for macosx.")
     proc = subprocess.run(
-        [sys.executable, "-c", _test_script],
+        [sys.executable, "-c", _test_script,
+         json.dumps({"toolbar": toolbar})],
         env={**os.environ, "MPLBACKEND": backend, "SOURCE_DATE_EPOCH": "0"},
-        timeout=_test_timeout)
+        timeout=_test_timeout,
+        stdout=subprocess.PIPE, universal_newlines=True)
     if proc.returncode:
         pytest.fail("The subprocess returned with non-zero exit status "
                     f"{proc.returncode}.")
+    assert proc.stdout.count("CloseEvent") == 1
 
 
-@pytest.mark.skipif('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI' in os.environ,
+@pytest.mark.skipif('TF_BUILD' in os.environ,
                     reason="this test fails an azure for unknown reasons")
 @pytest.mark.skipif(os.name == "nt", reason="Cannot send SIGINT on Windows.")
 def test_webagg():
