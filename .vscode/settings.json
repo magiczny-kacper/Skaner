@@ -17,5 +17,6 @@
         "**/__pycache__/": true
     },
     "python.linting.enabled": true,
-    "python.venvPath": ".venv"
+    "python.venvPath": ".venv",
+    "python.pythonPath": ".venv/bin/python"
 }
