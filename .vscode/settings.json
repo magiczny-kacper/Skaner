@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": ".venv\\Scripts\\python.exe",
+    "python.pythonPath": ".venv/bin/python",
     //"python.linting.pycodestyleEnabled": true,
     //"python.linting.pylintPath": ".venv/Lib/site-packages/pylint",
     "python.linting.pylintArgs": [
