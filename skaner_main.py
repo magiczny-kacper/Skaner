@@ -49,6 +49,7 @@ class MplCanvas(FigureCanvas):
         self.maxY = 0
         self.minY = 0
         self.plotref = []
+        self.axLegends = ["a", "b", "c", "d", "e"]
         super(MplCanvas, self).__init__(self.fig)
 
     def plotData(self, xdata, ydata, lines):
@@ -57,7 +58,16 @@ class MplCanvas(FigureCanvas):
             # .plot returns a list of line <reference>s, as we're
             # only getting one we can take the first element.
             for i in range(lines):
-                plot_refs = self.axes.plot(xdata, ydata[0], lineColors[i])
+                if len(self.axLegends) >= i + 1:
+                    axlabel = self.axLegends[i]
+                else:
+                    axlabel = None
+
+                plot_refs = self.axes.plot(
+                    xdata, ydata[0], lineColors[i], label=axlabel)
+
+                legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
+                    0.5, 1.05), ncol=3, fancybox=True, shadow=True)
                 self.plotref.append(plot_refs[0])
         else:
             # We have a reference, we can use it to update the data for that line.
@@ -71,6 +81,14 @@ class MplCanvas(FigureCanvas):
         self.plotref = []
         self.draw()
         self.axes = self.fig.add_subplot(111)
+
+    def setAxisLabels(self, xlegend, ylegend):
+        self.axes.set_xlabel(xlegend)
+        self.axes.set_ylabel(ylegend)
+
+    def setAxesLegend(self, legends):
+        self.axLegends = []
+        self.axLegends = legends
 
     def setXscale(self, scale):
         self.axes.set_xscale(scale)
@@ -102,21 +120,8 @@ class MplCanvas(FigureCanvas):
     def setAutoscale(self, state, ax):
         self.axes.autoscale(state, ax)
 
-    def pointMax(self, x, y):
-        if self.annMax != None:
-            self.annMax.remove()
-        textData = "Max " + "{:.5f}".format(x) + " ; " + "{:.5f}".format(y)
-        self.annMax = self.axes.annotate(
-            text=textData, xy=(x, y), color="purple", xytext=(x - (x*0.1), self.maxY),
-            arrowprops=dict(arrowstyle='->', facecolor='black'))
-
-    def pointMin(self, x, y):
-        if self.annMin != None:
-            self.annMin.remove()
-        textData = "Min " + "{:.5f}".format(x) + " ; " + "{:.5f}".format(y)
-        self.annMin = self.axes.annotate(
-            text=textData, xy=(x, y), color="purple", xytext=(x - (x*0.1), self.minY),
-            arrowprops=dict(arrowstyle='->', facecolor='black'))
+    def saveToPNG(self, filename):
+        self.fig.savefig(filename, dpi=100, format='png')
 
 
 '''
@@ -141,7 +146,7 @@ class MainWindow(QWidget):
         self.minval_x = 0.0
         self.XreadFromFile = False
 
-# Definicje etkiet w programie
+        # Definicje etkiet w programie
         # Etykiety, umieszczone obok pół wpisywania danych
         samplesNumberLabel = QLabel("Ilość punktów:", self)
         samplingIntervalLabel = QLabel("Okres próbkowania [ms]:", self)
@@ -156,7 +161,7 @@ class MainWindow(QWidget):
         self.maxLabel = QLabel("MAX: x = 0; y = 0", self)
         self.minLabel = QLabel("MIN: x = 0; y = 0", self)
 
-# Definicje pól wprowadzania tekstu w programie
+        # Definicje pól wprowadzania tekstu w programie
         self.samplesNumberEdit = QLineEdit()
         self.samplingIntervalEdit = QLineEdit()
         self.initValueEdit = QLineEdit()
@@ -165,8 +170,15 @@ class MainWindow(QWidget):
         self.samplingIntervalEdit.setText(str(const.defSamplingPeriod))
         self.initValueEdit.setText(str(const.definitValue))
         self.endValueEdit.setText(str(const.defendValue))
+        self.xLegendEdit = QLineEdit()
+        self.yLegendEdit = QLineEdit()
 
-# Definicje przycisków w programie
+        self.lineLegendsEdit = []
+        for i in range(lineCount):
+            self.lineLegendsEdit.append(QLineEdit())
+            self.lineLegendsEdit[i].setToolTip('Przebieg ' + str(i))
+
+        # Definicje przycisków w programie
         self.startBtn = QPushButton("&Start", self)
         self.startBtn.setStyleSheet("background-color:lightgreen")
         self.startBtn.clicked.connect(self.start_plot)
@@ -185,8 +197,10 @@ class MainWindow(QWidget):
         self.saveXBtn.clicked.connect(self.savexToFile)
         self.readXBtn = QPushButton("Wczytaj X", self)
         self.readXBtn.clicked.connect(self.readxFromFile)
+        self.saveToPicBtn = QPushButton("Zapisz PNG", self)
+        self.saveToPicBtn.clicked.connect(self.savePlotToPic)
 
-# Combo Boxy
+        # Combo Boxy
         self.plotXscale = QComboBox(self)
         self.plotXscale.addItem('X: Liniowa')
         self.plotXscale.addItem('X: Logarytmiczna')
@@ -206,10 +220,23 @@ class MainWindow(QWidget):
         self.sampXGenCombo.addItem('Liniowo')
         self.sampXGenCombo.addItem('Logarytmicznie')
 
-# Progres bar
+        self.plotCntCombo = QComboBox(self)
+        for i in range(5):
+            if i == 0:
+                suffix = " przebieg"
+            else:
+                suffix = " przebiegów"
+            self.plotCntCombo.addItem(str(i + 1) + suffix)
+
+        # Progres bar
         self.progressBar = QProgressBar(self)
 
-# Boxy na widgety
+        # Boxy na widgety
+        self.plotSaveButtonsGroup = QGroupBox("Zapis przebiegu")
+        grdLay = QGridLayout()
+        grdLay.addWidget(self.saveToPicBtn, 0, 0)
+        self.plotSaveButtonsGroup.setLayout(grdLay)
+
         self.dataParametersGroup = QGroupBox("Nastawy")
         grdLay = QGridLayout()
         grdLay.addWidget(samplesNumberLabel,
@@ -255,10 +282,19 @@ class MainWindow(QWidget):
         self.plotSettingsGroup = QGroupBox("Ustawienia wykresu")
         grdLay = QGridLayout()
         grdLay.addWidget(QLabel("Skala"), 0, 0)
+        grdLay.addWidget(QLabel("Legenda X"), 0, 1)
+        grdLay.addWidget(QLabel("Legenda Y"), 2, 1)
+        grdLay.addWidget(self.xLegendEdit, 1, 1)
+        grdLay.addWidget(self.yLegendEdit, 3, 1)
         grdLay.addWidget(self.plotXscale, const.pltXsclRow, const.pltXsclCol)
         grdLay.addWidget(self.plotYscale, const.pltYsclRow, const.pltYsclCol)
         grdLay.addWidget(QLabel("Siatka"), 3, 0)
         grdLay.addWidget(self.plotGrid, const.pltGridRow, const.pltGridCol)
+        grdLay.addWidget(self.plotCntCombo, 4, 1)
+
+        for i in range(lineCount):
+            grdLay.addWidget(self.lineLegendsEdit[i], i, 3)
+
         self.plotSettingsGroup.setLayout(grdLay)
 
         self.ctrlButtonsGroup = QGroupBox("Kontrola")
@@ -277,13 +313,14 @@ class MainWindow(QWidget):
 
         self.confFileGroup.setLayout(grdLay)
 
-# Layout Tabelaryczny
+        # Layout Tabelaryczny
         Tlayout = QGridLayout()
 
-        Tlayout.addWidget(self.dataParametersGroup, 0, 1)
-        Tlayout.addWidget(self.currentDataGroup, 0, 3)
-        Tlayout.addWidget(self.plotSettingsGroup, 0, 2)
         Tlayout.addWidget(self.ctrlButtonsGroup, 0, 0)
+        Tlayout.addWidget(self.plotSaveButtonsGroup, 0, 1)
+        Tlayout.addWidget(self.dataParametersGroup, 0, 2)
+        Tlayout.addWidget(self.plotSettingsGroup, 0, 3)
+        Tlayout.addWidget(self.currentDataGroup, 0, 4)
 
         # Okno wykresu
         self.canvas = MplCanvas(self, width=const.canvWid,
@@ -349,6 +386,8 @@ class MainWindow(QWidget):
             self.minval = data[0]
             maxxupdt = True
             minupdt = True
+            self.canvas.setAxisLabels(
+                self.xLegendEdit.text(), self.yLegendEdit.text())
 
         self.increment_index()
         self.currentYlabel.setText(curry)
@@ -359,14 +398,12 @@ class MainWindow(QWidget):
                 "{:.5f}".format(self.maxval_x) + " Y=" + \
                 "{:.5f}".format(self.maxval)
             self.maxLabel.setText(maxx)
-            self.canvas.pointMax(self.maxval_x, self.maxval)
 
         if minupdt == True:
             minx = "MIN: X=" + \
                 "{:.5f}".format(self.minval_x) + " Y=" + \
                 "{:.5f}".format(self.minval)
             self.minLabel.setText(minx)
-            self.canvas.pointMin(self.minval_x, self.minval)
 
         self.canvas.setYlim(self.minval, self.maxval)
         self.canvas.plotData(self.xdata, self.ydata, lineCount)
@@ -385,7 +422,10 @@ class MainWindow(QWidget):
             self.__endValue = float(self.endValueEdit.text())
             self.__step = (self.__endValue - self.__initValue) / self.__samples
             self.__samples = self.__samples + 1
-
+            legends = []
+            for i in range(lineCount):
+                legends.append(self.lineLegendsEdit[i].text())
+            self.canvas.setAxesLegend(legends)
             dataok = True
         except ValueError:
             QMessageBox.warning(self, "Błąd", "Błędne dane.", QMessageBox.Ok)
@@ -429,6 +469,8 @@ class MainWindow(QWidget):
                 elif self.plotYscale.currentIndex() == 1:
                     self.canvas.setYscale('log')
                 self.canvas.setAutoscale(True, 'both')
+                self.canvas.setAxisLabels(
+                    self.xLegendEdit.text(), self.yLegendEdit.text())
                 # Tablica na wartości Y
                 self.ydata = []
                 for j in range(10):
@@ -637,11 +679,16 @@ class MainWindow(QWidget):
             '''
                 Pobierz dane z urządzenia z poprzedniego pomiaru i wyślij kolejną nastawę
             '''
-            pomiar.append(math.cos(self.xdata[index - 1] * 10))
-            pomiar.append(math.cos(self.xdata[index - 1] * 0.5))
-            pomiar.append(math.cos(self.xdata[index - 1]))
-            pomiar.append(math.cos(self.xdata[index - 1] * 2))
-            pomiar.append(math.cos(self.xdata[index - 1] * 0.1))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * 10 * random.random()))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * 0.5 * random.random()))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * random.random()))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * 2 * random.random()))
+            pomiar.append(
+                math.cos(self.xdata[index - 1] * 0.1 * random.random()))
 
         return pomiar
 
@@ -649,6 +696,20 @@ class MainWindow(QWidget):
         minimum = min(data)
         maximum = max(data)
         return [maximum, minimum]
+
+    def savePlotToPic(self):
+
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        dialogBox = QFileDialog()
+        dialogBox.setWindowTitle("Zapisz przebiegi do pliku")
+        dialogBox.setNameFilters(["Obraz PNG (*.png)"])
+        dialogBox.setDefaultSuffix('png')
+        dialogBox.setAcceptMode(QFileDialog.AcceptSave)
+        if dialogBox.exec_() == QFileDialog.Accepted:
+            filename = dialogBox.selectedFiles()[0]
+            self.canvas.saveToPNG(filename)
 
 
 if __name__ == '__main__':
