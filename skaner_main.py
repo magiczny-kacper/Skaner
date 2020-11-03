@@ -49,7 +49,7 @@ class MplCanvas(FigureCanvas):
         self.maxY = 0
         self.minY = 0
         self.plotref = []
-        self.axLegends = []
+        self.axLegends = ["a", "b", "c", "d", "e"]
         super(MplCanvas, self).__init__(self.fig)
 
     def plotData(self, xdata, ydata, lines):
@@ -66,6 +66,8 @@ class MplCanvas(FigureCanvas):
                 plot_refs = self.axes.plot(
                     xdata, ydata[0], lineColors[i], label=axlabel)
 
+                legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
+                    0.5, 1.05), ncol=3, fancybox=True, shadow=True)
                 self.plotref.append(plot_refs[0])
         else:
             # We have a reference, we can use it to update the data for that line.
@@ -87,8 +89,6 @@ class MplCanvas(FigureCanvas):
     def setAxesLegend(self, legends):
         self.axLegends = []
         self.axLegends = legends
-        legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
-            0.5, 1.05), ncol=3, fancybox=True, shadow=True)
 
     def setXscale(self, scale):
         self.axes.set_xscale(scale)
@@ -119,6 +119,9 @@ class MplCanvas(FigureCanvas):
 
     def setAutoscale(self, state, ax):
         self.axes.autoscale(state, ax)
+
+    def saveToPNG(self, filename):
+        self.fig.savefig(filename, dpi=100, format='png')
 
 
 '''
@@ -194,6 +197,8 @@ class MainWindow(QWidget):
         self.saveXBtn.clicked.connect(self.savexToFile)
         self.readXBtn = QPushButton("Wczytaj X", self)
         self.readXBtn.clicked.connect(self.readxFromFile)
+        self.saveToPicBtn = QPushButton("Zapisz PNG", self)
+        self.saveToPicBtn.clicked.connect(self.savePlotToPic)
 
         # Combo Boxy
         self.plotXscale = QComboBox(self)
@@ -227,6 +232,11 @@ class MainWindow(QWidget):
         self.progressBar = QProgressBar(self)
 
         # Boxy na widgety
+        self.plotSaveButtonsGroup = QGroupBox("Zapis przebiegu")
+        grdLay = QGridLayout()
+        grdLay.addWidget(self.saveToPicBtn, 0, 0)
+        self.plotSaveButtonsGroup.setLayout(grdLay)
+
         self.dataParametersGroup = QGroupBox("Nastawy")
         grdLay = QGridLayout()
         grdLay.addWidget(samplesNumberLabel,
@@ -306,10 +316,11 @@ class MainWindow(QWidget):
         # Layout Tabelaryczny
         Tlayout = QGridLayout()
 
-        Tlayout.addWidget(self.dataParametersGroup, 0, 1)
-        Tlayout.addWidget(self.currentDataGroup, 0, 3)
-        Tlayout.addWidget(self.plotSettingsGroup, 0, 2)
         Tlayout.addWidget(self.ctrlButtonsGroup, 0, 0)
+        Tlayout.addWidget(self.plotSaveButtonsGroup, 0, 1)
+        Tlayout.addWidget(self.dataParametersGroup, 0, 2)
+        Tlayout.addWidget(self.plotSettingsGroup, 0, 3)
+        Tlayout.addWidget(self.currentDataGroup, 0, 4)
 
         # Okno wykresu
         self.canvas = MplCanvas(self, width=const.canvWid,
@@ -685,6 +696,20 @@ class MainWindow(QWidget):
         minimum = min(data)
         maximum = max(data)
         return [maximum, minimum]
+
+    def savePlotToPic(self):
+
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        dialogBox = QFileDialog()
+        dialogBox.setWindowTitle("Zapisz przebiegi do pliku")
+        dialogBox.setNameFilters(["Obraz PNG (*.png)"])
+        dialogBox.setDefaultSuffix('png')
+        dialogBox.setAcceptMode(QFileDialog.AcceptSave)
+        if dialogBox.exec_() == QFileDialog.Accepted:
+            filename = dialogBox.selectedFiles()[0]
+            self.canvas.saveToPNG(filename)
 
 
 if __name__ == '__main__':
