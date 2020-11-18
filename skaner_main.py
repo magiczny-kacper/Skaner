@@ -181,10 +181,7 @@ class MainWindow(QWidget):
 
     def VariablesInit(self):
         self.__index = 0
-        self.__samples = const.DefaultSamples
-        self.__samplingPeriod = const.DefaultSamplingPeriod
-        self.__initValue = const.DefaultInitialValue
-        self.__endValue = const.DefaultEndValue
+        self.ConfigUpdate(const.DefaultConfiguration)
         self.maxval = 0.0
         self.maxval_x = 0.0
         self.minval = 0.0
@@ -193,6 +190,7 @@ class MainWindow(QWidget):
         self.xdata = []
         self.ydata = []
         self._plot_ref = None
+
         return
 
     def ControlBoxInit(self):
@@ -240,10 +238,12 @@ class MainWindow(QWidget):
         self.samplingIntervalEdit = QLineEdit()
         self.initValueEdit = QLineEdit()
         self.endValueEdit = QLineEdit()
-        self.samplesNumberEdit.setText(str(const.DefaultSamples))
-        self.samplingIntervalEdit.setText(str(const.DefaultSamplingPeriod))
-        self.initValueEdit.setText(str(const.DefaultInitialValue))
-        self.endValueEdit.setText(str(const.DefaultEndValue))
+        self.samplesNumberEdit.setText(
+            str(self.Configuration['SamplesNumber']))
+        self.samplingIntervalEdit.setText(
+            str(self.Configuration['SamplingPeriod']))
+        self.initValueEdit.setText(str(self.Configuration['InitialValue']))
+        self.endValueEdit.setText(str(self.Configuration['EndValue']))
 
         self.genXbtn = QPushButton("Generuj X")
         self.genXbtn.clicked.connect(self.genXmethod)
@@ -311,19 +311,25 @@ class MainWindow(QWidget):
         self.plotYscale.addItem('Y: Liniowa')
         self.plotYscale.addItem('Y: Logarytmiczna')
 
-        retLayout.addWidget(QLabel("Skala"), 0, 0)
-        retLayout.addWidget(QLabel("Legenda X"), 1, 1)
-        retLayout.addWidget(QLabel("Legenda Y"), 3, 1)
-        retLayout.addWidget(QLabel("Legendy serii"), 0, 3)
-        retLayout.addWidget(self.xLegendEdit, 2, 1)
-        retLayout.addWidget(self.yLegendEdit, 4, 1)
-        retLayout.addWidget(
-            self.plotXscale, const.pltXsclRow, const.pltXsclCol)
-        retLayout.addWidget(
-            self.plotYscale, const.pltYsclRow, const.pltYsclCol)
+        self.plotCntEdit = QLineEdit(self)
+
+        retLayout.addWidget(QLabel("Ilość przebiegów:"), 0, 0)
+        retLayout.addWidget(QLabel("Legenda X"), 1, 0)
+        retLayout.addWidget(QLabel("Legenda Y"), 2, 0)
+
         retLayout.addWidget(QLabel("Siatka"), 3, 0)
-        retLayout.addWidget(self.plotGrid, const.pltGridRow, const.pltGridCol)
-        retLayout.addWidget(self.plotLegendsEdit, 1, 3, 4, 1)
+        retLayout.addWidget(self.plotGrid, 3, 1)
+
+        retLayout.addWidget(self.plotCntEdit, 0, 1)
+
+        retLayout.addWidget(self.xLegendEdit, 1, 1)
+        retLayout.addWidget(self.yLegendEdit, 2, 1)
+
+        retLayout.addWidget(self.plotXscale, 4, 0)
+        retLayout.addWidget(self.plotYscale, 4, 1)
+
+        retLayout.addWidget(QLabel("Legendy serii"), 0, 2)
+        retLayout.addWidget(self.plotLegendsEdit, 1, 2, 4, 1)
 
         return retLayout
 
@@ -373,6 +379,29 @@ class MainWindow(QWidget):
         self.openConfBtn.setEnabled(True)
         self.sampXGenCombo.setEnabled(True)
         return
+
+    def ConfigUpdateFromGUI(self):
+        dataok = False
+        try:
+            self.Configuration['SamplesNumber'] = int(
+                self.samplesNumberEdit.text())
+            self.Configuration['SamplingPeriod'] = int(
+                self.samplingIntervalEdit.text())
+            self.Configuration['InitialValue'] = float(
+                self.initValueEdit.text())
+            self.Configuration['EndValue'] = float(self.endValueEdit.text())
+            self.__step = (
+                self.Configuration['EndValue'] - self.Configuration['InitialValue']) / self.Configuration['SamplesNumber']
+            self.Configuration['SamplesNumber'] += 1
+            dataok = True
+        except ValueError:
+            QMessageBox.warning(self, "Błąd", "Błędne dane.", QMessageBox.Ok)
+
+        return dataok
+
+    def ConfigUpdate(self, newConfig):
+        self.Configuration = newConfig
+        return True
 
     def increment_index(self):
         self.__index += 1
@@ -451,23 +480,14 @@ class MainWindow(QWidget):
 
     def start_plot(self):
         self.clear_plot()
-        try:
-            self.__samples = int(self.samplesNumberEdit.text())
-            self.__samplingPeriod = int(self.samplingIntervalEdit.text())
-            self.__initValue = float(self.initValueEdit.text())
-            self.__endValue = float(self.endValueEdit.text())
-            self.__step = (self.__endValue - self.__initValue) / self.__samples
-            self.__samples = self.__samples + 1
-            legends = []
-            legends = self.plotLegendsEdit.toPlainText().split(';')
-            self.canvas.setAxesLegend(legends)
-            dataok = True
-        except ValueError:
-            QMessageBox.warning(self, "Błąd", "Błędne dane.", QMessageBox.Ok)
-            dataok = False
+        dataok = self.ConfigUpdateFromGUI()
+        legends = []
+        legends = self.plotLegendsEdit.toPlainText().split(';')
+        self.canvas.setAxesLegend(legends)
+
         if dataok:
-            if self.__samplingPeriod > 0:
-                if self.__samples > 0 and self.__step != 0.0:
+            if self.Configuration['SamplingPeriod'] > 0:
+                if self.Configuration['SamplesNumber'] > 0 and self.__step != 0.0:
                     if self.XreadFromFile == False:
                         self.genXmethod()
                     else:

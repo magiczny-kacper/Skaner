@@ -3,10 +3,12 @@
 WindowTitle = "Skaner"
 
 # Domyślne wartości początkowe
-DefaultSamples = 1000  # Ilość próbek
-DefaultSamplingPeriod = 10  # Okres próbkowania
-DefaultInitialValue = 10.0  # Wartośc początkowa
-DefaultEndValue = 100.0  # Krok
+DefaultConfiguration = {
+    'SamplesNumber': 1000,
+    'SamplingPeriod': 10,
+    'InitialValue': 10.0,
+    'EndValue': 100.0
+}
 
 # Stałe GUI
 
