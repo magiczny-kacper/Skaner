@@ -25,8 +25,6 @@ from PyQt5.QtWidgets import \
     QProgressBar, \
     QGroupBox
 
-import pyqtgraph
-
 import json
 import csv
 
@@ -56,28 +54,22 @@ class MplCanvas(FigureCanvas, anim.FuncAnimation):
         self.axLegends = ["a", "b", "c", "d", "e"]
 
     def plotData(self, xdata, ydata, lines):
-        if len(self.plotref) == 0:
-            # First time we have no plot reference, so do a normal plot.
-            # .plot returns a list of line <reference>s, as we're
-            # only getting one we can take the first element.
-            for i in range(lines):
-                if len(self.axLegends) >= i + 1:
-                    axlabel = self.axLegends[i]
-                else:
-                    axlabel = None
+        for i in range(lines):
+            if len(self.axLegends) >= i + 1:
+                axlabel = self.axLegends[i]
+            else:
+                axlabel = None
 
-                plot_refs = self.axes.plot(
-                    xdata, ydata[0], lineColors[i], label=axlabel)
+            plot_refs = self.axes.plot(
+                xdata, ydata[0], lineColors[i], label=axlabel)
 
-                legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
-                    0.5, 1.05), ncol=3, fancybox=True, shadow=True)
-                self.plotref.append(plot_refs[0])
-        else:
-            # We have a reference, we can use it to update the data for that line.
-            for i in range(lines):
-                self.plotref[i].set_ydata(ydata[i])
-        # Trigger the canvas to update and redraw.
+            legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
+                0.5, 1.05), ncol=3, fancybox=True, shadow=True)
+            self.plotref.append(plot_refs[0])
+            self.plotref[i].set_ydata(ydata[i])
+
         self.draw()
+        return
 
     def clearPlot(self):
         self.axes = self.figure.clear()
@@ -100,9 +92,10 @@ class MplCanvas(FigureCanvas, anim.FuncAnimation):
         self.axes.set_yscale(scale)
 
     def setYlim(self, min, max):
-        if min == max:
-            self.axes.set_ylim(min)
-        else:
+        if min != max:
+            # if min == max:
+            #    self.axes.set_ylim(min)
+            # else:
             if min > 0:
                 minn = min * 0.9
             else:
@@ -113,6 +106,7 @@ class MplCanvas(FigureCanvas, anim.FuncAnimation):
             else:
                 maxx = max * 0.9
             self.axes.set_ylim(minn, maxx)
+            self.axes.plot()
             self.maxY = maxx
             self.minY = minn
 
@@ -535,7 +529,7 @@ class MainWindow(QWidget):
 
         self.canvas.setPlotGrid(gridOn, gridAx)
         self.canvas.draw()
-        #self.canvas.setAutoscale(True, 'both')
+        self.canvas.setAutoscale(True, 'both')
 
     def saveConfigFile(self):
         options = QFileDialog.Options()
