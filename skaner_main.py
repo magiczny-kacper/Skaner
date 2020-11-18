@@ -54,19 +54,25 @@ class MplCanvas(FigureCanvas, anim.FuncAnimation):
         self.axLegends = ["a", "b", "c", "d", "e"]
 
     def plotData(self, xdata, ydata, lines):
-        for i in range(lines):
-            if len(self.axLegends) >= i + 1:
-                axlabel = self.axLegends[i]
-            else:
-                axlabel = None
+        if len(self.plotref) == 0:
+            for i in range(lines):
+                if len(self.axLegends) >= i + 1:
+                    axlabel = self.axLegends[i]
+                else:
+                    axlabel = None
 
-            plot_refs = self.axes.plot(
-                xdata, ydata[0], lineColors[i], label=axlabel)
+                plot_refs = self.axes.plot(
+                    xdata, ydata[0], lineColors[i], label=axlabel)
 
-            legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
-                0.5, 1.05), ncol=3, fancybox=True, shadow=True)
-            self.plotref.append(plot_refs[0])
-            self.plotref[i].set_ydata(ydata[i])
+                legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
+                    0.5, 1.05), ncol=3, fancybox=True, shadow=True)
+                self.plotref.append(plot_refs[0])
+                self.plotref[i].set_ydata(ydata[i])
+        else:
+            for i in range(lines):
+                plot_refs = self.axes.plot(
+                    xdata, ydata[0], lineColors[i])
+                self.plotref[i].set_ydata(ydata[i])
 
         self.draw()
         return
