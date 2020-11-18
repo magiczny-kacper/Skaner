@@ -1,8 +1,10 @@
 import random
 import math
 import matplotlib
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvas
+import matplotlib as mpl
+import matplotlib.figure as mpl_fig
+import matplotlib.animation as anim
 
 import PyQt5.QtCore
 from PyQt5.QtCore import Qt
@@ -23,7 +25,6 @@ from PyQt5.QtWidgets import \
     QProgressBar, \
     QGroupBox
 
-
 import json
 import csv
 
@@ -39,48 +40,42 @@ lineCount = 5
 lineColors = ['red', 'green', 'blue', 'skyblue', 'olive']
 
 
-class MplCanvas(FigureCanvas):
+class MplCanvas(FigureCanvas, anim.FuncAnimation):
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
-        self.fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = self.fig.add_subplot(111)
+        FigureCanvas.__init__(self, mpl_fig.Figure())
+
+        self.axes = self.figure.subplots()
         self.annMax = None
         self.annMin = None
         self.maxY = 0
         self.minY = 0
         self.plotref = []
         self.axLegends = ["a", "b", "c", "d", "e"]
-        super(MplCanvas, self).__init__(self.fig)
 
     def plotData(self, xdata, ydata, lines):
-        if len(self.plotref) == 0:
-            # First time we have no plot reference, so do a normal plot.
-            # .plot returns a list of line <reference>s, as we're
-            # only getting one we can take the first element.
-            for i in range(lines):
-                if len(self.axLegends) >= i + 1:
-                    axlabel = self.axLegends[i]
-                else:
-                    axlabel = None
+        for i in range(lines):
+            if len(self.axLegends) >= i + 1:
+                axlabel = self.axLegends[i]
+            else:
+                axlabel = None
 
-                plot_refs = self.axes.plot(
-                    xdata, ydata[0], lineColors[i], label=axlabel)
+            plot_refs = self.axes.plot(
+                xdata, ydata[0], lineColors[i], label=axlabel)
 
-                legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
-                    0.5, 1.05), ncol=3, fancybox=True, shadow=True)
-                self.plotref.append(plot_refs[0])
-        else:
-            # We have a reference, we can use it to update the data for that line.
-            for i in range(lines):
-                self.plotref[i].set_ydata(ydata[i])
-        # Trigger the canvas to update and redraw.
+            legend = self.axes.legend(loc='upper center', bbox_to_anchor=(
+                0.5, 1.05), ncol=3, fancybox=True, shadow=True)
+            self.plotref.append(plot_refs[0])
+            self.plotref[i].set_ydata(ydata[i])
+
         self.draw()
+        return
 
     def clearPlot(self):
-        self.axes = self.fig.clear()
+        self.axes = self.figure.clear()
         self.plotref = []
         self.draw()
-        self.axes = self.fig.add_subplot(111)
+        self.axes = self.figure.subplots()
 
     def setAxisLabels(self, xlegend, ylegend):
         self.axes.set_xlabel(xlegend)
@@ -97,9 +92,10 @@ class MplCanvas(FigureCanvas):
         self.axes.set_yscale(scale)
 
     def setYlim(self, min, max):
-        if min == max:
-            self.axes.set_ylim(min)
-        else:
+        if min != max:
+            # if min == max:
+            #    self.axes.set_ylim(min)
+            # else:
             if min > 0:
                 minn = min * 0.9
             else:
@@ -110,6 +106,7 @@ class MplCanvas(FigureCanvas):
             else:
                 maxx = max * 0.9
             self.axes.set_ylim(minn, maxx)
+            self.axes.plot()
             self.maxY = maxx
             self.minY = minn
 
@@ -121,7 +118,8 @@ class MplCanvas(FigureCanvas):
         self.axes.autoscale(state, ax)
 
     def saveToPNG(self, filename):
-        self.fig.savefig(filename, dpi=100, format='png')
+        self.figureCpy = self.figure
+        self.figure.savefig(filename, dpi=100, format='png')
 
 
 '''
