@@ -1,8 +1,10 @@
 import random
 import math
 import matplotlib
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvas
+import matplotlib as mpl
+import matplotlib.figure as mpl_fig
+import matplotlib.animation as anim
 
 import PyQt5.QtCore
 from PyQt5.QtCore import Qt
@@ -39,18 +41,18 @@ lineCount = 5
 lineColors = ['red', 'green', 'blue', 'skyblue', 'olive']
 
 
-class MplCanvas(FigureCanvas):
+class MplCanvas(FigureCanvas, anim.FuncAnimation):
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
-        self.fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = self.fig.add_subplot(111)
+        FigureCanvas.__init__(self, mpl_fig.Figure())
+
+        self.axes = self.figure.subplots()
         self.annMax = None
         self.annMin = None
         self.maxY = 0
         self.minY = 0
         self.plotref = []
         self.axLegends = ["a", "b", "c", "d", "e"]
-        super(MplCanvas, self).__init__(self.fig)
 
     def plotData(self, xdata, ydata, lines):
         if len(self.plotref) == 0:
@@ -77,10 +79,10 @@ class MplCanvas(FigureCanvas):
         self.draw()
 
     def clearPlot(self):
-        self.axes = self.fig.clear()
+        self.axes = self.figure.clear()
         self.plotref = []
         self.draw()
-        self.axes = self.fig.add_subplot(111)
+        self.axes = self.figure.subplots()
 
     def setAxisLabels(self, xlegend, ylegend):
         self.axes.set_xlabel(xlegend)
@@ -121,7 +123,8 @@ class MplCanvas(FigureCanvas):
         self.axes.autoscale(state, ax)
 
     def saveToPNG(self, filename):
-        self.fig.savefig(filename, dpi=100, format='png')
+        self.figureCpy = self.figure
+        self.figure.savefig(filename, dpi=100, format='png')
 
 
 '''
@@ -531,7 +534,7 @@ class MainWindow(QWidget):
 
         self.canvas.setPlotGrid(gridOn, gridAx)
         self.canvas.draw()
-        self.canvas.setAutoscale(True, 'both')
+        #self.canvas.setAutoscale(True, 'both')
 
     def saveConfigFile(self):
         options = QFileDialog.Options()

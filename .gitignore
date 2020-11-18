@@ -129,3 +129,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .png
+
+# Niepotrzebne pliki
+.csv/
+.json
