@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import \
     QProgressBar, \
     QGroupBox
 
+import pyqtgraph
 
 import json
 import csv
