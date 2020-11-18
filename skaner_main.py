@@ -23,7 +23,8 @@ from PyQt5.QtWidgets import \
     QCheckBox, \
     QButtonGroup, \
     QProgressBar, \
-    QGroupBox
+    QGroupBox, \
+    QPlainTextEdit
 
 import json
 import csv
@@ -136,186 +137,25 @@ class MplCanvas(FigureCanvas, anim.FuncAnimation):
 class MainWindow(QWidget):
 
     def __init__(self, *args, **kwargs):
-        # Inicjlizacja zmiennych
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.setWindowTitle("Skaner")
-        self.__index = 0
-        self.__samples = const.defSamples
-        self.__samplingPeriod = const.defSamplingPeriod
-        self.__initValue = const.definitValue
-        self.__endValue = const.defendValue
-        self.maxval = 0.0
-        self.maxval_x = 0.0
-        self.minval = 0.0
-        self.minval_x = 0.0
-        self.XreadFromFile = False
+        self.setWindowTitle(const.WindowTitle)
 
-        # Definicje etkiet w programie
-        # Etykiety, umieszczone obok pół wpisywania danych
-        samplesNumberLabel = QLabel("Ilość punktów:", self)
-        samplingIntervalLabel = QLabel("Okres próbkowania [ms]:", self)
-        initValueLabel = QLabel("Wartość początkowa:", self)
-        endValueLabel = QLabel("Wartość końcowa:", self)
-        xGenScaleLabel = QLabel("Generowanie X:")
-        self.xGenLabel = QLabel("Brak X")
-
-        # Etykiety wyświetlania współrzędnych ostatniego punktu
-        self.currentXlabel = QLabel("x = 0", self)
-        self.currentYlabel = QLabel('y = 0', self)
-        self.maxLabel = QLabel("MAX: x = 0; y = 0", self)
-        self.minLabel = QLabel("MIN: x = 0; y = 0", self)
-
-        # Definicje pól wprowadzania tekstu w programie
-        self.samplesNumberEdit = QLineEdit()
-        self.samplingIntervalEdit = QLineEdit()
-        self.initValueEdit = QLineEdit()
-        self.endValueEdit = QLineEdit()
-        self.samplesNumberEdit.setText(str(const.defSamples))
-        self.samplingIntervalEdit.setText(str(const.defSamplingPeriod))
-        self.initValueEdit.setText(str(const.definitValue))
-        self.endValueEdit.setText(str(const.defendValue))
-        self.xLegendEdit = QLineEdit()
-        self.yLegendEdit = QLineEdit()
-
-        self.lineLegendsEdit = []
-        for i in range(lineCount):
-            self.lineLegendsEdit.append(QLineEdit())
-            self.lineLegendsEdit[i].setToolTip('Przebieg ' + str(i))
-
-        # Definicje przycisków w programie
-        self.startBtn = QPushButton("&Start", self)
-        self.startBtn.setStyleSheet("background-color:lightgreen")
-        self.startBtn.clicked.connect(self.start_plot)
-        self.stopBtn = QPushButton("Stop", self)
-        self.stopBtn.setStyleSheet("background-color:red")
-        self.stopBtn.clicked.connect(self.stop_plot)
-
-        # Przyciski do operacji na plikach
-        self.saveConfBtn = QPushButton("Zapisz", self)
-        self.openConfBtn = QPushButton("Wczytaj", self)
-        self.saveConfBtn.clicked.connect(self.saveConfigFile)
-        self.openConfBtn.clicked.connect(self.openConfigFile)
-        self.genXbtn = QPushButton("Generuj X")
-        self.genXbtn.clicked.connect(self.genXmethod)
-        self.saveXBtn = QPushButton("Zapisz X", self)
-        self.saveXBtn.clicked.connect(self.savexToFile)
-        self.readXBtn = QPushButton("Wczytaj X", self)
-        self.readXBtn.clicked.connect(self.readxFromFile)
-        self.saveToPicBtn = QPushButton("Zapisz PNG", self)
-        self.saveToPicBtn.clicked.connect(self.savePlotToPic)
-
-        # Combo Boxy
-        self.plotXscale = QComboBox(self)
-        self.plotXscale.addItem('X: Liniowa')
-        self.plotXscale.addItem('X: Logarytmiczna')
-
-        self.plotYscale = QComboBox(self)
-        self.plotYscale.addItem('Y: Liniowa')
-        self.plotYscale.addItem('Y: Logarytmiczna')
-
-        self.plotGrid = QComboBox(self)
-        self.plotGrid.addItem('Brak')
-        self.plotGrid.addItem('Tylko X')
-        self.plotGrid.addItem('Tylko Y')
-        self.plotGrid.addItem('X i Y')
-        self.plotGrid.currentIndexChanged.connect(self.changePlotGrid)
-
-        self.sampXGenCombo = QComboBox(self)
-        self.sampXGenCombo.addItem('Liniowo')
-        self.sampXGenCombo.addItem('Logarytmicznie')
-
-        self.plotCntCombo = QComboBox(self)
-        for i in range(5):
-            if i == 0:
-                suffix = " przebieg"
-            else:
-                suffix = " przebiegów"
-            self.plotCntCombo.addItem(str(i + 1) + suffix)
-
-        # Progres bar
-        self.progressBar = QProgressBar(self)
-
-        # Boxy na widgety
-        self.plotSaveButtonsGroup = QGroupBox("Zapis przebiegu")
-        grdLay = QGridLayout()
-        grdLay.addWidget(self.saveToPicBtn, 0, 0)
-        self.plotSaveButtonsGroup.setLayout(grdLay)
-
-        self.dataParametersGroup = QGroupBox("Nastawy")
-        grdLay = QGridLayout()
-        grdLay.addWidget(samplesNumberLabel,
-                         const.sampNumLabRow, const.sampNumLabCol)
-        grdLay.addWidget(samplingIntervalLabel,
-                         const.sampIntLabRow, const.sampIntLabCol)
-        grdLay.addWidget(initValueLabel, const.iniValLabRow,
-                         const.iniValLabCol)
-        grdLay.addWidget(endValueLabel, const.endValLabRow, const.endValLabCol)
-        grdLay.addWidget(xGenScaleLabel, const.xGenScaleLabelRow,
-                         const.xGenScaleLabelCol)
-        grdLay.addWidget(self.samplesNumberEdit,
-                         const.sampNumEditRow, const.sampNumEditCol)
-        grdLay.addWidget(self.samplingIntervalEdit,
-                         const.sampIntEditRow, const.sampIntEditCol)
-        grdLay.addWidget(self.initValueEdit,
-                         const.iniValEditRow, const.iniValEditCol)
-        grdLay.addWidget(self.endValueEdit,
-                         const.endValEditRow, const.endValEditCol)
-        grdLay.addWidget(self.sampXGenCombo,
-                         const.sampXScaleRow, const.sampXScaleCol)
-        grdLay.addWidget(self.saveXBtn,
-                         const.saveXBtnRow, const.saveXBtnCol)
-        grdLay.addWidget(self.readXBtn,
-                         const.readXBtnRow, const.readXBtnCol)
-        grdLay.addWidget(self.genXbtn,
-                         const.genXBtnRow, const.genXBtnCol)
-        grdLay.addWidget(self.xGenLabel, const.xGenLabelRow,
-                         const.xGenLabelCol)
-        self.dataParametersGroup.setLayout(grdLay)
-
-        self.currentDataGroup = QGroupBox("Wartości")
-        grdLay = QGridLayout()
-        grdLay.addWidget(self.maxLabel, const.maxLabelRow, const.maxLabelCol)
-        grdLay.addWidget(self.minLabel, const.minLabelRow, const.minLabelCol)
-        grdLay.addWidget(self.currentXlabel,
-                         const.currXLabRow, const.currXLabCol)
-        grdLay.addWidget(self.currentYlabel,
-                         const.currYLabRow, const.currYLabCol)
-        grdLay.addWidget(self.progressBar, const.prgBarRow, const.prgBarCol)
-        self.currentDataGroup.setLayout(grdLay)
-
-        self.plotSettingsGroup = QGroupBox("Ustawienia wykresu")
-        grdLay = QGridLayout()
-        grdLay.addWidget(QLabel("Skala"), 0, 0)
-        grdLay.addWidget(QLabel("Legenda X"), 0, 1)
-        grdLay.addWidget(QLabel("Legenda Y"), 2, 1)
-        grdLay.addWidget(self.xLegendEdit, 1, 1)
-        grdLay.addWidget(self.yLegendEdit, 3, 1)
-        grdLay.addWidget(self.plotXscale, const.pltXsclRow, const.pltXsclCol)
-        grdLay.addWidget(self.plotYscale, const.pltYsclRow, const.pltYsclCol)
-        grdLay.addWidget(QLabel("Siatka"), 3, 0)
-        grdLay.addWidget(self.plotGrid, const.pltGridRow, const.pltGridCol)
-        grdLay.addWidget(self.plotCntCombo, 4, 1)
-
-        for i in range(lineCount):
-            grdLay.addWidget(self.lineLegendsEdit[i], i, 3)
-
-        self.plotSettingsGroup.setLayout(grdLay)
+        self.VariablesInit()
 
         self.ctrlButtonsGroup = QGroupBox("Kontrola")
-        grdLay = QGridLayout()
-        grdLay.addWidget(self.startBtn, const.startBtnRow, const.startBtnCol)
-        grdLay.addWidget(self.stopBtn, const.stopBtnRow, const.stopBtnCol)
-        grdLay.addWidget(QLabel("Plik ustawień"), 2, 0)
-        grdLay.addWidget(self.saveConfBtn,
-                         const.saveConfBtnRow, const.saveConfBtnCol)
-        grdLay.addWidget(self.openConfBtn,
-                         const.openConfBtnRow, const.openConfBtnCol)
-        self.ctrlButtonsGroup.setLayout(grdLay)
+        self.ctrlButtonsGroup.setLayout(self.ControlBoxInit())
 
-        self.confFileGroup = QGroupBox("Plik ustawień")
-        grdLay = QGridLayout()
+        self.plotSaveButtonsGroup = QGroupBox("Zapis przebiegu")
+        self.plotSaveButtonsGroup.setLayout(self.PlotSaveBoxInit())
 
-        self.confFileGroup.setLayout(grdLay)
+        self.dataParametersGroup = QGroupBox("Nastawy")
+        self.dataParametersGroup.setLayout(self.RuntimeSettingsBoxInit())
+
+        self.plotSettingsGroup = QGroupBox("Ustawienia wykresu")
+        self.plotSettingsGroup.setLayout(self.PlotControlBoxInit())
+
+        self.currentDataGroup = QGroupBox("Wartości")
+        self.currentDataGroup.setLayout(self.ValuesBoxInit())
 
         # Layout Tabelaryczny
         Tlayout = QGridLayout()
@@ -333,19 +173,210 @@ class MainWindow(QWidget):
                           const.canvCol, const.canvRowDim, const.canvColDim)
         self.setLayout(Tlayout)
 
-        self.xdata = []
-        self.ydata = []
-        # We need to store a reference to the plotted line
-        # somewhere, so we can apply the new data to it.
-        self._plot_ref = None
-        # Setup a timer to trigger the redraw by calling update_plot.
         self.timer = PyQt5.QtCore.QTimer()
         self.timer.timeout.connect(self.update_plot)
 
         self.showMaximized()
+        return
+
+    def VariablesInit(self):
+        self.__index = 0
+        self.__samples = const.DefaultSamples
+        self.__samplingPeriod = const.DefaultSamplingPeriod
+        self.__initValue = const.DefaultInitialValue
+        self.__endValue = const.DefaultEndValue
+        self.maxval = 0.0
+        self.maxval_x = 0.0
+        self.minval = 0.0
+        self.minval_x = 0.0
+        self.XreadFromFile = False
+        self.xdata = []
+        self.ydata = []
+        self._plot_ref = None
+        return
+
+    def ControlBoxInit(self):
+        retLayout = QGridLayout()
+        self.startBtn = QPushButton("&Start", self)
+        self.startBtn.setStyleSheet("background-color:lightgreen")
+        self.startBtn.clicked.connect(self.start_plot)
+        self.stopBtn = QPushButton("Stop", self)
+        self.stopBtn.setStyleSheet("background-color:red")
+        self.stopBtn.clicked.connect(self.stop_plot)
+        self.saveConfBtn = QPushButton("Zapisz", self)
+        self.openConfBtn = QPushButton("Wczytaj", self)
+        self.saveConfBtn.clicked.connect(self.saveConfigFile)
+        self.openConfBtn.clicked.connect(self.openConfigFile)
+
+        retLayout.addWidget(
+            self.startBtn, const.startBtnRow, const.startBtnCol)
+        retLayout.addWidget(self.stopBtn, const.stopBtnRow, const.stopBtnCol)
+        retLayout.addWidget(QLabel("Plik ustawień"), 2, 0)
+        retLayout.addWidget(self.saveConfBtn,
+                            const.saveConfBtnRow, const.saveConfBtnCol)
+        retLayout.addWidget(self.openConfBtn,
+                            const.openConfBtnRow, const.openConfBtnCol)
+
+        return retLayout
+
+    def PlotSaveBoxInit(self):
+        retLayout = QGridLayout()
+        self.saveToPicBtn = QPushButton("Zapisz PNG", self)
+        self.saveToPicBtn.clicked.connect(self.savePlotToPic)
+        retLayout.addWidget(self.saveToPicBtn, 0, 0)
+        return retLayout
+
+    def RuntimeSettingsBoxInit(self):
+        retLayout = QGridLayout()
+
+        samplesNumberLabel = QLabel("Ilość punktów:", self)
+        samplingIntervalLabel = QLabel("Okres próbkowania [ms]:", self)
+        initValueLabel = QLabel("Wartość początkowa:", self)
+        endValueLabel = QLabel("Wartość końcowa:", self)
+        xGenScaleLabel = QLabel("Generowanie X:")
+        self.xGenLabel = QLabel("Brak X")
+
+        self.samplesNumberEdit = QLineEdit()
+        self.samplingIntervalEdit = QLineEdit()
+        self.initValueEdit = QLineEdit()
+        self.endValueEdit = QLineEdit()
+        self.samplesNumberEdit.setText(str(const.DefaultSamples))
+        self.samplingIntervalEdit.setText(str(const.DefaultSamplingPeriod))
+        self.initValueEdit.setText(str(const.DefaultInitialValue))
+        self.endValueEdit.setText(str(const.DefaultEndValue))
+
+        self.genXbtn = QPushButton("Generuj X")
+        self.genXbtn.clicked.connect(self.genXmethod)
+        self.saveXBtn = QPushButton("Zapisz X", self)
+        self.saveXBtn.clicked.connect(self.savexToFile)
+        self.readXBtn = QPushButton("Wczytaj X", self)
+        self.readXBtn.clicked.connect(self.readxFromFile)
+
+        self.plotGrid = QComboBox(self)
+        self.plotGrid.addItem('Brak')
+        self.plotGrid.addItem('Tylko X')
+        self.plotGrid.addItem('Tylko Y')
+        self.plotGrid.addItem('X i Y')
+        self.plotGrid.currentIndexChanged.connect(self.changePlotGrid)
+
+        self.sampXGenCombo = QComboBox(self)
+        self.sampXGenCombo.addItem('Liniowo')
+        self.sampXGenCombo.addItem('Logarytmicznie')
+
+        retLayout.addWidget(samplesNumberLabel,
+                            const.SampleNumberLabelRow, const.SampleNumberLabelCol)
+        retLayout.addWidget(samplingIntervalLabel,
+                            const.SamplingPeriodLabelRow, const.SamplingPeriodLabelCol)
+        retLayout.addWidget(initValueLabel, const.InitialValueLabelRow,
+                            const.InitialValueLabelCol)
+        retLayout.addWidget(
+            endValueLabel, const.EndValueLabelRow, const.EndValueLabelCol)
+        retLayout.addWidget(xGenScaleLabel, const.xGenScaleLabelRow,
+                            const.xGenScaleLabelCol)
+        retLayout.addWidget(self.samplesNumberEdit,
+                            const.sampNumEditRow, const.sampNumEditCol)
+        retLayout.addWidget(self.samplingIntervalEdit,
+                            const.SamplingPeriodEditRow, const.SamplingPeriodEditCol)
+        retLayout.addWidget(self.initValueEdit,
+                            const.InitialValueEditRow, const.InitialValueEditCol)
+        retLayout.addWidget(self.endValueEdit,
+                            const.EndValueEditRow, const.EndValueEditCol)
+        retLayout.addWidget(self.sampXGenCombo,
+                            const.sampXScaleRow, const.sampXScaleCol)
+        retLayout.addWidget(self.saveXBtn,
+                            const.saveXBtnRow, const.saveXBtnCol)
+        retLayout.addWidget(self.readXBtn,
+                            const.readXBtnRow, const.readXBtnCol)
+        retLayout.addWidget(self.genXbtn,
+                            const.genXBtnRow, const.genXBtnCol)
+        retLayout.addWidget(self.xGenLabel, const.xGenLabelRow,
+                            const.xGenLabelCol)
+        return retLayout
+
+    def PlotControlBoxInit(self):
+        retLayout = QGridLayout()
+
+        self.plotLegendsEdit = QPlainTextEdit()
+        self.plotLegendsEdit.setToolTip(
+            'Tu wpisz legendy oddzielone średnikiem.')
+
+        self.xLegendEdit = QLineEdit()
+        self.yLegendEdit = QLineEdit()
+
+        self.plotXscale = QComboBox(self)
+        self.plotXscale.addItem('X: Liniowa')
+        self.plotXscale.addItem('X: Logarytmiczna')
+
+        self.plotYscale = QComboBox(self)
+        self.plotYscale.addItem('Y: Liniowa')
+        self.plotYscale.addItem('Y: Logarytmiczna')
+
+        retLayout.addWidget(QLabel("Skala"), 0, 0)
+        retLayout.addWidget(QLabel("Legenda X"), 1, 1)
+        retLayout.addWidget(QLabel("Legenda Y"), 3, 1)
+        retLayout.addWidget(QLabel("Legendy serii"), 0, 3)
+        retLayout.addWidget(self.xLegendEdit, 2, 1)
+        retLayout.addWidget(self.yLegendEdit, 4, 1)
+        retLayout.addWidget(
+            self.plotXscale, const.pltXsclRow, const.pltXsclCol)
+        retLayout.addWidget(
+            self.plotYscale, const.pltYsclRow, const.pltYsclCol)
+        retLayout.addWidget(QLabel("Siatka"), 3, 0)
+        retLayout.addWidget(self.plotGrid, const.pltGridRow, const.pltGridCol)
+        retLayout.addWidget(self.plotLegendsEdit, 1, 3, 4, 1)
+
+        return retLayout
+
+    def ValuesBoxInit(self):
+        retLayout = QGridLayout()
+
+        self.currentXlabel = QLabel("x = 0", self)
+        self.currentYlabel = QLabel('y = 0', self)
+        self.maxLabel = QLabel("MAX: x = 0; y = 0", self)
+        self.minLabel = QLabel("MIN: x = 0; y = 0", self)
+        self.progressBar = QProgressBar(self)
+
+        retLayout.addWidget(
+            self.maxLabel, const.maxLabelRow, const.maxLabelCol)
+        retLayout.addWidget(
+            self.minLabel, const.minLabelRow, const.minLabelCol)
+        retLayout.addWidget(self.currentXlabel,
+                            const.currXLabRow, const.currXLabCol)
+        retLayout.addWidget(self.currentYlabel,
+                            const.currYLabRow, const.currYLabCol)
+        retLayout.addWidget(self.progressBar, const.prgBarRow, const.prgBarCol)
+
+        return retLayout
+
+    def LockEdits(self):
+        self.samplingIntervalEdit.setReadOnly(True)
+        self.samplesNumberEdit.setReadOnly(True)
+        self.initValueEdit.setReadOnly(True)
+        self.endValueEdit.setReadOnly(True)
+        self.progressBar.setMaximum(self.__samples)
+        self.progressBar.setValue(0)
+        self.plotXscale.setEnabled(False)
+        self.plotYscale.setEnabled(False)
+        self.startBtn.setEnabled(False)
+        self.openConfBtn.setEnabled(False)
+        self.sampXGenCombo.setEnabled(False)
+        return
+
+    def UnlockEdits(self):
+        self.samplingIntervalEdit.setReadOnly(False)
+        self.samplesNumberEdit.setReadOnly(False)
+        self.initValueEdit.setReadOnly(False)
+        self.endValueEdit.setReadOnly(False)
+        self.plotXscale.setEnabled(True)
+        self.plotYscale.setEnabled(True)
+        self.startBtn.setEnabled(True)
+        self.openConfBtn.setEnabled(True)
+        self.sampXGenCombo.setEnabled(True)
+        return
 
     def increment_index(self):
         self.__index += 1
+        return
 
     def get_index(self):
         return self.__index
@@ -416,6 +447,7 @@ class MainWindow(QWidget):
             self.stop_plot()
             QMessageBox.information(
                 self, "Info", "Zakończono.", QMessageBox.Ok)
+        return
 
     def start_plot(self):
         self.clear_plot()
@@ -427,8 +459,7 @@ class MainWindow(QWidget):
             self.__step = (self.__endValue - self.__initValue) / self.__samples
             self.__samples = self.__samples + 1
             legends = []
-            for i in range(lineCount):
-                legends.append(self.lineLegendsEdit[i].text())
+            legends = self.plotLegendsEdit.toPlainText().split(';')
             self.canvas.setAxesLegend(legends)
             dataok = True
         except ValueError:
@@ -451,17 +482,7 @@ class MainWindow(QWidget):
                 if self.__samplingPeriod < 10:
                     QMessageBox.warning(
                         self, "Uwaga!", "Uwaga, okres próbkowania niżzy niż 10 ms, może powodować niepoprawną pracę programu.")
-                self.samplingIntervalEdit.setReadOnly(True)
-                self.samplesNumberEdit.setReadOnly(True)
-                self.initValueEdit.setReadOnly(True)
-                self.endValueEdit.setReadOnly(True)
-                self.progressBar.setMaximum(self.__samples)
-                self.progressBar.setValue(0)
-                self.plotXscale.setEnabled(False)
-                self.plotYscale.setEnabled(False)
-                self.startBtn.setEnabled(False)
-                self.openConfBtn.setEnabled(False)
-                self.sampXGenCombo.setEnabled(False)
+                self.LockEdits()
                 self.clear_plot()
                 self.changePlotGrid()
                 if self.plotXscale.currentIndex() == 0:
@@ -499,19 +520,13 @@ class MainWindow(QWidget):
             else:
                 QMessageBox.warning(
                     self, "Błąd", "Błędne dane.", QMessageBox.Ok)
+        return
 
     def stop_plot(self):
         self.canvas.axes.autoscale(enable=True, axis='y')
         self.timer.stop()
-        self.plotXscale.setEnabled(True)
-        self.plotYscale.setEnabled(True)
-        self.startBtn.setEnabled(True)
-        self.openConfBtn.setEnabled(True)
-        self.samplingIntervalEdit.setReadOnly(False)
-        self.samplesNumberEdit.setReadOnly(False)
-        self.initValueEdit.setReadOnly(False)
-        self.endValueEdit.setReadOnly(False)
-        self.sampXGenCombo.setEnabled(True)
+        self.UnlockEdits()
+        return
 
     def clear_plot(self):
         self.__index = 0
@@ -519,6 +534,7 @@ class MainWindow(QWidget):
         self.maxval = 0.0
         self.canvas.clearPlot()
         self._plot_ref = None
+        return
 
     def changePlotGrid(self):
         gridOn = False
@@ -536,6 +552,7 @@ class MainWindow(QWidget):
         self.canvas.setPlotGrid(gridOn, gridAx)
         self.canvas.draw()
         self.canvas.setAutoscale(True, 'both')
+        return
 
     def saveConfigFile(self):
         options = QFileDialog.Options()
@@ -568,6 +585,7 @@ class MainWindow(QWidget):
 
             with open(filename, 'w') as outfile:
                 json.dump(config, outfile, indent=4, sort_keys=True)
+        return
 
     def openConfigFile(self):
         options = QFileDialog.Options()
@@ -605,6 +623,7 @@ class MainWindow(QWidget):
                     print(e)
                     QMessageBox.warning(
                         self, "Błąd", "Błędne ustawienia wykresu.", QMessageBox.Ok)
+        return
 
     def savexToFile(self):
         if len(self.xdata) != 0:
@@ -626,6 +645,7 @@ class MainWindow(QWidget):
         else:
             QMessageBox.warning(
                 self, "Błąd", "X nie został jeszcze wygenerowany.", QMessageBox.Ok)
+        return
 
     def readxFromFile(self):
         options = QFileDialog.Options()
@@ -644,6 +664,7 @@ class MainWindow(QWidget):
 
                 self.XreadFromFile = True
                 self.xGenLabel.setText("X wczytany")
+        return
 
     def genXmethod(self):
         self.XreadFromFile = False
@@ -667,6 +688,7 @@ class MainWindow(QWidget):
             self.xGenLabel.setText("X wygenerowany")
         except ValueError:
             QMessageBox.warning(self, "Błąd", "Błędne dane.", QMessageBox.Ok)
+        return
 
     def getData(self):
         index = self.get_index()
@@ -714,6 +736,7 @@ class MainWindow(QWidget):
         if dialogBox.exec_() == QFileDialog.Accepted:
             filename = dialogBox.selectedFiles()[0]
             self.canvas.saveToPNG(filename)
+        return
 
 
 if __name__ == '__main__':

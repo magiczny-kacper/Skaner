@@ -1,41 +1,43 @@
 # Stałe wartości używane w programie, dla łatwiejszych późniejszych zmian
 
+WindowTitle = "Skaner"
+
 # Domyślne wartości początkowe
-defSamples = 1000  # Ilość próbek
-defSamplingPeriod = 10  # Okres próbkowania
-definitValue = 10.0  # Wartośc początkowa
-defendValue = 100.0  # Krok
+DefaultSamples = 1000  # Ilość próbek
+DefaultSamplingPeriod = 10  # Okres próbkowania
+DefaultInitialValue = 10.0  # Wartośc początkowa
+DefaultEndValue = 100.0  # Krok
 
 # Stałe GUI
 
 # Etykiety parametrów
-sampNumLabRow = 3
-sampNumLabCol = 0
+SampleNumberLabelRow = 3
+SampleNumberLabelCol = 0
 
-sampIntLabRow = 0
-sampIntLabCol = 0
+SamplingPeriodLabelRow = 0
+SamplingPeriodLabelCol = 0
 
-iniValLabRow = 1
-iniValLabCol = 0
+InitialValueLabelRow = 1
+InitialValueLabelCol = 0
 
-endValLabRow = 2
-endValLabCol = 0
+EndValueLabelRow = 2
+EndValueLabelCol = 0
 
 xGenScaleLabelRow = 4
 xGenScaleLabelCol = 0
 
 # Pola do wpisania parametrów
-sampNumEditRow = sampNumLabRow
-sampNumEditCol = sampNumLabCol + 1
+sampNumEditRow = SampleNumberLabelRow
+sampNumEditCol = SampleNumberLabelCol + 1
 
-sampIntEditRow = sampIntLabRow
-sampIntEditCol = sampIntLabCol + 1
+SamplingPeriodEditRow = SamplingPeriodLabelRow
+SamplingPeriodEditCol = SamplingPeriodLabelCol + 1
 
-iniValEditRow = iniValLabRow
-iniValEditCol = iniValLabCol + 1
+InitialValueEditRow = InitialValueLabelRow
+InitialValueEditCol = InitialValueLabelCol + 1
 
-endValEditRow = endValLabRow
-endValEditCol = endValLabCol + 1
+EndValueEditRow = EndValueLabelRow
+EndValueEditCol = EndValueLabelCol + 1
 
 sampXScaleRow = xGenScaleLabelRow
 sampXScaleCol = xGenScaleLabelCol + 1
